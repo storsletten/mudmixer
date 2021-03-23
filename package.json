@@ -1,0 +1,19 @@
+{
+  "name": "MUDMixer",
+  "version": "1.0.0",
+  "description": "MUDMixer is an add-on for MUD clients that enriches the gaming experience with connection mixing functionality and a variety of other features.",
+  "main": "./src/main.js",
+  "author": "Martin Storsletten",
+  "license": "MIT",
+  "scripts": {
+    "start": "node ./src/main.js -q"
+  },
+  "keywords": [
+    "MUD",
+    "MOO"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tms88/mudmixer.git"
+  }
+}
