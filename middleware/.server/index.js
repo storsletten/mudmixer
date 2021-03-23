@@ -8,4 +8,9 @@ module.exports = async (main, middleware) => {
  require('./mcpPing.js')(main, middleware);
  require('./mcpSimpleEdit.js')(main, middleware);
  require('./mcpStatus.js')(main, middleware);
+
+ require('./registerSoundpack.js')(main, middleware);
+ require('./unregisterSoundpack.js')(main, middleware);
+
+ require('./proxiani.js')(main, middleware);
 };

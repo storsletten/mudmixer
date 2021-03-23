@@ -259,6 +259,7 @@ module.exports = main => {
   // Component shortcuts
   confirm(options = {}) { return this.setInterceptor(new exports.Confirm({ ...(exports.utils.isRegularObject(options) ? options : { message: options }), middleware: this, device: this.device })).action.promise; }
   localEdit(options) { return (new exports.LocalEdit({ middleware: this, device: this.device, ...options })).promise; }
+  loginPrompt(options = {}) { return this.setInterceptor(new exports.LoginPrompt({ ...(exports.utils.isRegularObject(options) ? options : { message: options }), middleware: this, device: this.device })).action.promise; }
   menu(options) { return this.setInterceptor(new exports.Menu({ ...(exports.utils.isRegularObject(options) ? options : { choices: (Array.isArray(options) ? options : [options]) }), middleware: this, device: this.device })).action.promise; }
   optionsMenu(options) { return exports.optionsMenu({ device: this.device, ...options, middleware: this }); }
   prompt(options = {}) { return this.setInterceptor(new exports.Prompt({ ...(exports.utils.isRegularObject(options) ? options : { message: options }), middleware: this, device: this.device })).action.promise; }

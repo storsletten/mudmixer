@@ -2,10 +2,13 @@ module.exports = (main, middleware) => {
  const exports = main.exports;
 
  return {
-  syntax: `hostname ["TLS"]port [loginCommand]`,
+  syntax: `hostname ["TLS"]port [login command]`,
   aliases: ['ca', 'cadd', 'add-connection'],
   help: [
    `This command adds a new outgoing connection to the current session.`,
+   `Examples:`,
+   `  mx ca localhost 1234`,
+   `  mx ca toastsoft.net tls1443 connect username password 1`,
   ],
   action: function({ device, argstr }) {
    const serverOptions = exports.parseServerString(argstr);

@@ -32,12 +32,8 @@ process.on('unhandledRejection', (reason, promise) => {
  if (reason && reason instanceof Error) exports.log('Unhandled rejection', promise, 'reason', reason);
 });
 
-// Initializing the application.
-exports.initPromise = require('./initialize.js')(module).then(() => {
- exports.log(`${exports.title()} finished loading in ${exports.utils.formatThousands(Date.now() - exports.launchTime)} ms.`);
- // Auto start if the application was loaded directly (i.e. not through an import).
- if (require.main === module) exports.start();
-}).catch(reason => {
+// A basic error handler function, intended to catch startup errors when running in headless mode.
+const startupErrorHandler = reason => {
  if (require.main === module && !exports.cmd.q && exports.utils.msgBox) {
   let message;
   if (typeof reason === 'string') message = reason;
@@ -45,4 +41,13 @@ exports.initPromise = require('./initialize.js')(module).then(() => {
   exports.utils.msgBox(`Could not start.${message ? ` Reason: ${message}` : ''}`);
  }
  throw reason;
-});
+};
+
+// Initializing the application.
+exports.initPromise = require('./initialize.js')(module).then(() => {
+ exports.log(`${exports.title()} finished loading in ${exports.utils.formatThousands(Date.now() - exports.launchTime)} ms.`);
+ // Auto start if the application was loaded directly (i.e. not through an import).
+ if (require.main === module) {
+  exports.start().catch(startupErrorHandler);
+ }
+}).catch(startupErrorHandler);

@@ -6,9 +6,9 @@ module.exports = async (main) => {
 
  if (Array.isArray(config.listeners) && config.listeners.length > 0) {
   await exports.createListeners({ optionsArray: config.listeners, muteStartupErrors: true });
-  if (exports.listeners.size === 0) exports.log(`Couldn't start listening for incoming connections.`);
+  if (exports.listeners.size === 0) throw new Error(`Couldn't start listening for incoming connections.`);
  }
- else exports.log(`No listeners configured.`);
+ else throw new Error(`No listeners configured.`);
 
  await exports.loadSessions();
 

@@ -10,7 +10,6 @@ module.exports = (main, middleware) => {
     name,
     version: (args.length > 0 ? args[1] : undefined),
    };
-   device.tell(`#$#mx version ${exports.package.version || 'unknown'}`);
    const oldSoundpack = device.soundpack;
    device.soundpack = newSoundpack;
    device.events.emit('registerSoundpack', newSoundpack, oldSoundpack);

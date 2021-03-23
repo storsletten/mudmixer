@@ -81,7 +81,9 @@ module.exports = main => {
     this.reconnectingTime = undefined;
     exports.log(`${this.title()} successfully connected ${isTLS ? 'securely ' : ''}to ${options.host} on port ${options.port}.`);
     this.events.emitBinaryState('ready');
-    if (options.loginCommand) this.tell(options.loginCommand);
+    if (options.loginCommand) {
+     this.tellServer(typeof options.loginCommand === 'string' ? options.loginCommand.split(';').map(str => str.trim()) : options.loginCommand);
+    }
     return true;
    }).catch(() => {
     if (!socket.destroyed) {

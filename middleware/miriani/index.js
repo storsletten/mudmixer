@@ -4,5 +4,4 @@ module.exports = async (main, middleware) => {
  if (device.isClient()) throw new Error(`This middleware is designed for server connections only.`);
 
  require('./registerSoundpack.js')(main, middleware);
- require('./unregisterSoundpack.js')(main, middleware);
 };

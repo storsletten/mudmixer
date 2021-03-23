@@ -52,24 +52,16 @@ module.exports = (main, middleware) => {
     else device.tell(command.help);
    }
    else {
-    if (!device.session) {
-     device.tell([
-      `First step is to create or connect to a session.`,
-      `You can think of a session as a communication hub that keeps associated clients and servers interconnected.`,
-      `To create a new session, see MX HELP SESSION.`,
-      `To connect to an existing session, type CONNECT followed by a session name.`,
-      `For example: connect my super awesome session`,
-      `To exit, type MX QUIT.`,
-     ]);
-    }
-    else {
-     device.tell([
-      `To connect to a server, see MX HELP CONNECT.`,
-      `To disconnect from a server, see MX HELP DISCONNECT.`,
-      `To switch to a different session, see MX HELP SESSION.`,
-      `To exit, type MX QUIT.`,
-     ]);
-    }
+    device.tell([
+     `Most of the ${exports.title()} functionality can be accessed with the MX command, and MX HELP can be used to view more details about specific MX commands.`,
+     `For example, MX HELP CA will show info about the mx connection-add command.`,
+     '',
+     `The following list shows some useful MX commands to get started:`,
+     `  MX CA - lets you add a new connection.`,
+     `  MX CD - disconnects a connection.`,
+     `  MX C - lets you switch between connections.`,
+     `  MX Q - terminates your client connection to ${exports.title()}.`,
+    ]);
    }
   },
  };

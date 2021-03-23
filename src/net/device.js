@@ -233,8 +233,8 @@ module.exports = main => {
     const lines = (this.middleware && !skipMiddleware) ? this.middleware.action({ device, line, options, triggers: this.middleware[this.isClient() ? 'clientTriggers' : 'serverTriggers'] }).lines : [line];
     if (device !== this && this.socket && this.isClient()) lines.forEach(line => this.socket.write(`${line}${this.eol}`, 'binary'));
     if (options.executed === undefined && this.isClient() && !this.hasActiveServers()) {
-     if (!this.session) device.tell(`You must CONNECT to a session first.`);
-     else if (this.session.servers.size === 0) device.tell(`There are no server connections to transmit to.`);
+     if (!this.session) device.tell(`Please use the CONNECT command to log in to a session.`);
+     else if (this.session.servers.size === 0) device.tell(`This session has no server connections added. Please see MX HELP CA for information about how to add a connection.`);
      else {
       const servers = this.getServers();
       if (servers.length === 0) device.tell(`You are not set to transmit to a server.`);

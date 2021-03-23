@@ -1,37 +1,29 @@
-module.exports = (main, middleware) => {
+module.exports = async (main, middleware) => {
  const exports = main.exports;
+ const device = middleware.device;
 
- middleware.setCommand('connect', ({ device, argstr, options }) => {
-  const maxAttempts = 10;
-  if (device.session) {
-   // If session is already set, then we simply let the connect command pass through.
-   options.clientsOnly = undefined;
-   return;
-  }
-  const sessionName = argstr.trim();
-  if (!sessionName) return device.tell(`Connect to which session?`);
-  if (device.sessionConnectAttempts) device.sessionConnectAttempts++;
-  else device.sessionConnectAttempts = 1;
-  if (exports.hasSessions()) {
-   const session = exports.getSession(sessionName, false);
-   if (!session) {
-    if (device.sessionConnectAttempts >= maxAttempts) {
-     device.tell(`That session could not be found, and the max number of connect attempts has been reached. Goodbye.`);
-     device.close('maxSessionConnectAttempts');
-    }
-    else device.tell(`That session does not exist.`);
+ if (device.session) await require('./mxCommands/index.js')(main, middleware);
+ else {
+  (async () => {
+   if (!device.destroyed && !device.session) {
+    const loginPrompt = middleware.setInterceptor(new exports.LoginPrompt({ device, middleware })).action;
+    device.timers.setTimeout('loginPrompt', 500, () => {
+     // Delaying this prompt in case there are clients / soundpacks that need a little bit of time to load scripts that depend on these messages.
+     // The Miriani Soundpack for VIP Mud is an example of this.
+     // It also gives clients a chance to login without ever having to see the prompt, in case someone wants that.
+     if (loginPrompt.status === 'pending' && loginPrompt.attempts === 0) {
+      device.tell([
+       '',
+       `  ${exports.title()} Login`,
+       `Session ID:`,
+      ]);
+     }
+    });
+    const session = await loginPrompt.promise;
+    // Loading MX commands after a successful login.
+    await require('./mxCommands/index.js')(main, middleware);
+    device.tell(`Type MX HELP if you need help.`);
    }
-   else {
-    device.tell(`Connected to session ${JSON.stringify(session.name)}.`);
-    session.addClient(device);
-   }
-  }
-  else {
-   const invalidCharacters = exports.utils.invalidFileName(sessionName);
-   if (invalidCharacters) return device.tell(`The session ID can't contain ${exports.utils.englishList(invalidCharacters, { and: 'or' })}.`);
-   const session = new exports.Session({ data: {}, name: sessionName, filePath: exports.dataPath('sessions', `${sessionName}.json`) });
-   session.addClient(device);
-   device.tell(`Session created.`);
-  }
- });
+  })();
+ }
 };
