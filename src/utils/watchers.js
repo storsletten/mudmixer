@@ -73,7 +73,12 @@ module.exports = main => {
    if (!name) throw new Error(`File name is missing.`);
    else if (!callback) throw new Error(`Callback is missing.`);
    const existingFile = this.files.get(name);
-   if (existingFile) existingFile.callbacks.set(callback, associatedWith);
+   if (existingFile) {
+    if (associatedWith) {
+     existingFile.callbacks.forEach((association, callback) => associatedWith === association && existingFile.callbacks.delete(callback));
+    }
+    existingFile.callbacks.set(callback, associatedWith);
+   }
    else if (exports.utils.invalidFileName(name)) throw new Error(`Invalid file name.`);
    else {
     const filePath = path.join(this.path, name);
