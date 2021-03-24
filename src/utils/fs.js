@@ -33,6 +33,7 @@ module.exports = main => {
   const files = [];
   const directories = [];
   dirEnts.forEach(dirEnt => {
+   if (options.excludedNames && options.excludedNames.includes(dirEnt.name)) return;
    (dirEnt.isDirectory() ? directories : files).push({
     name: dirEnt.name,
     source: path.join(resolvedSource, dirEnt.name),

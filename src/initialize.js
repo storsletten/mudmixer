@@ -67,7 +67,7 @@ module.exports = async (main) => {
  exports.copyBoilerplate = async (destination = exports.cmd.d) => {
   const resolvedDestination = path.join(path.resolve(destination), path.sep);
   try {
-   const created = await exports.utils.fs.copyDirRecursively(path.join(__dirname, 'boilerplate'), resolvedDestination, { overwrite: false });
+   const created = await exports.utils.fs.copyDirRecursively(path.join(__dirname, 'boilerplate'), resolvedDestination, { overwrite: false, excludedNames: ['.gitkeep'] });
    if (created.length > 0) exports.log(`Copied data directory boilerplate to ${exports.utils.formatPath(resolvedDestination)}:`, created.map(ent => exports.utils.formatPath(ent.destination.slice(resolvedDestination.length) + (ent.isDirectory ? path.sep : ''), { enclosingQuotes: false })).sort());
    return created;
   }
