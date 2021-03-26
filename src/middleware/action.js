@@ -23,8 +23,7 @@ module.exports = main => {
   }
 
   setTriggerReference(ref) {
-   if (this.status !== 'pending') throw new Error(`Do not set a settled Action as a trigger.`);
-   this.triggerReference = ref;
+   if (this.status === 'pending') this.triggerReference = ref;
   }
   unsetTriggerReference() {
    if (this.triggerReference) {

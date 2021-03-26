@@ -56,22 +56,28 @@ module.exports = main => {
   }
 
   setTrigger({ packageName, type, trigger, action }) {
+   const isAction = (action instanceof exports.Action);
    // First unsetting the trigger in case it exists already.
    this.unsetTrigger({ type, trigger });
-   // Then we see what kind of structure we're left with.
-   const structure = this._structures.get(type);
-   // Applying corrections if necessary.
-   // If you change these, then also change in unsetTrigger() accordingly!
-   if (type === 'ci' || type === 'cmd') trigger = trigger.toLowerCase();
-   else if (type === 're') {
-    if (!(trigger instanceof RegExp)) trigger = new RegExp(trigger);
+   // Yeah, unsetting the existing trigger even if it turns out we won't set the new one after all. I can't explain why, but I trust my intuition.
+   // Not setting an Action that has already been resolved or rejected.
+   if (!isAction || action.status === 'pending') {
+    // Then we will set the new trigger.
+    // First let's see what kind of structure we're left with after unsetting.
+    const structure = this._structures.get(type);
+    // Applying corrections if necessary.
+    // If you change these, then also change in unsetTrigger() accordingly!
+    if (type === 'ci' || type === 'cmd') trigger = trigger.toLowerCase();
+    else if (type === 're') {
+     if (!(trigger instanceof RegExp)) trigger = new RegExp(trigger);
+    }
+    // Construct the data object.
+    const data = { action, packageName };
+    // Finally setting the trigger.
+    if (structure) structure.set(trigger, data);
+    else this._structures.set(type, data);
+    if (isAction) action.setTriggerReference({ triggers: this, type, trigger, packageName });
    }
-   // Construct the data object.
-   const data = { action, packageName };
-   // Finally setting the trigger.
-   if (structure) structure.set(trigger, data);
-   else this._structures.set(type, data);
-   if (action instanceof exports.Action) action.setTriggerReference({ triggers: this, type, trigger, packageName });
    return { triggers: this, type, trigger, action, packageName };
   }
 

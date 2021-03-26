@@ -22,9 +22,11 @@ module.exports = main => {
     this.defaultChoice = options.defaultChoice;
     this.message = options.message;
     this.prompt = options.prompt;
-    this.printMenu(options);
+    // If options.argstr is a string, then the initial menu will not be displayed and argstr will be used as if it was entered as a line in the menu prompt.
+    if (typeof options.argstr === 'string') this.execute({ ...options, line: options.argstr });
+    else this.printMenu(options);
    }
-   else this.reject('no choices');
+   else this.reject('noChoices');
   }
 
   printMenu(args) {
