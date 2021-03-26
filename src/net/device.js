@@ -287,24 +287,38 @@ module.exports = main => {
    else return objects.map(object => exports.utils.stringify(object).split(/(\r\n|\r|\n)/)).flat();
   }
 
-  hasServers() {
+  isActive() { return Boolean(this.socket && !this.socket.destroyed && !this.connectingTime && !this.reconnectingTime); }
+
+  getClient() {
    for (let device of this.readPipes) {
-    if (!device.isClient()) return true;
+    if (device.isClient()) return device;
    }
-   return false;
   }
-  hasActiveServers() {
+  getActiveClient() {
+   // An active client in this context means a client that is currently set to transmit to "this" device.
    for (let device of this.readPipes) {
-    if (!device.isClient() && device.socket && !device.socket.destroyed && !device.connectingTime && !device.reconnectingTime) return true;
+    if (device.isClient() && device.readPipes.has(this)) return device;
    }
-   return false;
   }
-  getServers() {
-   return [...this.readPipes].filter(device => !device.isClient());
+  getClients() { return [...this.readPipes].filter(device => device.isClient()); }
+  getActiveClients() { return [...this.readPipes].filter(device => device.isClient() && device.readPipes.has(this)); }
+  hasClients() { return Boolean(this.getClient()); }
+  hasActiveClients() { return Boolean(this.getActiveClient()); }
+
+  getServer() {
+   for (let device of this.readPipes) {
+    if (!device.isClient()) return device;
+   }
   }
-  getActiveServers() {
-   return [...this.readPipes].filter(device => !device.isClient() && device.socket && !device.socket.destroyed && !device.connectingTime && !device.reconnectingTime);
+  getActiveServer() {
+   for (let device of this.readPipes) {
+    if (!device.isClient() && device.isActive()) return device;
+   }
   }
+  getServers() { return [...this.readPipes].filter(device => !device.isClient()); }
+  getActiveServers() { return [...this.readPipes].filter(device => !device.isClient() && device.isActive()); }
+  hasServers() { return Boolean(this.getServer()); }
+  hasActiveServers() { return Boolean(this.getActiveServer()); }
 
   pipe({ device, line, lines, operation, options }) {
    if (lines.length > 0) {
