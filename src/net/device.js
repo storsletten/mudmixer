@@ -99,7 +99,6 @@ module.exports = main => {
    // Using binary (latin1) encoding to preserve all Bytes while also allowing String and RegExp operations.
    this.socket.setEncoding('binary');
    this.socket.setKeepAlive(true, 15000);
-   this.socketEvents.on('error', error => exports.log(`${this.title()} socket error:`, error));
    this.socketEvents.on('data', data => {
     const backtrack = Math.min(2, this.bufferedData.length);
     // Backtrack determines how many characters from the end of bufferedData to include in text processing.

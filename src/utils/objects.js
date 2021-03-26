@@ -70,15 +70,29 @@ module.exports = main => {
   return updates;
  };
 
- const changePrototypeOf = (classInstance, newProto) => {
+ const changePrototypeOf = (classInstance, newProto, { depth = 1 } = {}) => {
   // This function should only be used on class instances, as it depends on Function.prototype.toString.
   // It returns true if the prototype is changed, false otherwise.
+  // Depth sets how far into the prototype chain to do source code comparison. Set to 0 if you don't want it to compare source code.
   const oldProto = Object.getPrototypeOf(classInstance);
-  if (oldProto !== newProto && oldProto.constructor.toString() !== newProto.constructor.toString()) {
-   Object.setPrototypeOf(classInstance, newProto);
-   return true;
+  if (oldProto === newProto) return false;
+  if (depth) {
+   let oldConstructor = oldProto.constructor;
+   let newConstructor = newProto.constructor;
+   let i = 0;
+   while (true) {
+    if (oldConstructor.toString() !== newConstructor.toString()) break;
+    else if (depth <= (++i)) return false;
+    else {
+     oldConstructor = Object.getPrototypeOf(oldConstructor);
+     if (oldConstructor === null) return false;
+     newConstructor = Object.getPrototypeOf(newConstructor);
+     if (newConstructor === null || oldConstructor === newConstructor) return false;
+    }
+   }
   }
-  else return false;
+  Object.setPrototypeOf(classInstance, newProto);
+  return true;
  };
 
  return {

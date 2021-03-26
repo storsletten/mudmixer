@@ -22,6 +22,7 @@ module.exports = main => {
 
   setSocket(socket) {
    super.setSocket(socket);
+   this.socketEvents.on('error', error => exports.log(`${this.title()} socket error:`, error));
    this.socketEvents.on('end', () => {
     this.socket.ended = true;
     this.close('socketEnd');
@@ -76,7 +77,7 @@ module.exports = main => {
   }
 
   update() {
-   exports.utils.changePrototypeOf(this, exports.Client.prototype);
+   exports.utils.changePrototypeOf(this, exports.Client.prototype, { depth: 2 });
   }
  }
 

@@ -120,13 +120,13 @@ module.exports = main => {
 
  class ClientTriggers extends Triggers {
   update() {
-   exports.utils.changePrototypeOf(this, exports.ClientTriggers.prototype);
+   exports.utils.changePrototypeOf(this, exports.ClientTriggers.prototype, { depth: 2 });
   }
  }
 
  class ServerTriggers extends Triggers {
   update() {
-   exports.utils.changePrototypeOf(this, exports.ServerTriggers.prototype);
+   exports.utils.changePrototypeOf(this, exports.ServerTriggers.prototype, { depth: 2 });
   }
  }
 

@@ -71,13 +71,16 @@ module.exports = main => {
     ? tls.connect({ rejectUnauthorized: false, ...options })
     : net.createConnection(options)
    );
-   this.setSocket(socket);
    const events = new exports.utils.Events(socket);
+   this.setSocket(socket);
    return (new Promise((resolve, reject) => {
-    events.on('error', () => reject(error));
+    events.on('error', error => reject(error));
     events.on('close', () => reject('close'));
     events.on(isTLS ? 'secureConnect' : 'connect', () => resolve());
-   })).then(() => {
+   })).finally(() => {
+    events.close();
+    this.connectingTime = undefined;
+   }).then(() => {
     this.reconnectingTime = undefined;
     exports.log(`${this.title()} successfully connected ${isTLS ? 'securely ' : ''}to ${options.host} on port ${options.port}.`);
     this.events.emitBinaryState('ready');
@@ -85,16 +88,10 @@ module.exports = main => {
      this.tellServer(typeof options.loginCommand === 'string' ? options.loginCommand.split(';').map(str => str.trim()) : options.loginCommand);
     }
     return true;
-   }).catch(() => {
-    if (!socket.destroyed) {
-     socket.destroy();
-     socket.unref();
-    }
-    if (this.connectingTime) this.prepareReconnect();
+   }).catch(reason => {
+    if (this.socket) this.unsetSocket(true);
+    this.prepareReconnect();
     return false;
-   }).finally(() => {
-    events.close();
-    this.connectingTime = undefined;
    });
   }
 
@@ -133,6 +130,7 @@ module.exports = main => {
 
   setSocket(socket) {
    super.setSocket(socket);
+   this.socketEvents.on('error', error => this.isActive() && exports.log(`${this.title()} socket error:`, error));
    this.socketEvents.on('end', () => {
     this.socket.ended = true;
     this.socket.destroy();
@@ -174,7 +172,7 @@ module.exports = main => {
   }
 
   update() {
-   exports.utils.changePrototypeOf(this, exports.Server.prototype);
+   exports.utils.changePrototypeOf(this, exports.Server.prototype, { depth: 2 });
   }
  }
 
