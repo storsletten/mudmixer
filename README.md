@@ -5,7 +5,7 @@ MUDMixer is a MUD client add-on with middleware support for customizing the traf
 
 ## Installation
 Download and install the latest recommended version of Node.js from [nodejs.org](https://nodejs.org/).
-Developed using Node 15, but versions 10 through 14 may also work (not tested!).
+Developed using Node 15, but Node 14 should also work.
 
 ## Usage
 If you prefer to run MUDMixer without a console window (recommended for most Windows users), then launch the file called Start.vbs that is located inside this package folder.
