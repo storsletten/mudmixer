@@ -166,10 +166,7 @@ module.exports = main => {
   }
 
   update() {
-   if (exports.Logger.prototype !== Object.getPrototypeOf(this)) {
-    Object.setPrototypeOf(this, exports.Logger.prototype);
-    this.lastUpdateTime = new Date();
-   }
+   exports.utils.changePrototypeOf(this, exports.Logger.prototype);
   }
  }
 

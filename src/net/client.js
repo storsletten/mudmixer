@@ -76,10 +76,7 @@ module.exports = main => {
   }
 
   update() {
-   if (exports.Client.prototype !== Object.getPrototypeOf(this)) {
-    Object.setPrototypeOf(this, exports.Client.prototype);
-    this.lastUpdateTime = new Date();
-   }
+   exports.utils.changePrototypeOf(this, exports.Client.prototype);
   }
  }
 

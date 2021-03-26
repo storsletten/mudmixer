@@ -70,9 +70,21 @@ module.exports = main => {
   return updates;
  };
 
+ const changePrototypeOf = (classInstance, newProto) => {
+  // This function should only be used on class instances, as it depends on Function.prototype.toString.
+  // It returns true if the prototype is changed, false otherwise.
+  const oldProto = Object.getPrototypeOf(classInstance);
+  if (oldProto !== newProto && oldProto.constructor.toString() !== newProto.constructor.toString()) {
+   Object.setPrototypeOf(classInstance, newProto);
+   return true;
+  }
+  else return false;
+ };
+
  return {
   isRegularObject,
   mergeRegularObject,
   pruneRegularObject,
+  changePrototypeOf,
  };
 };

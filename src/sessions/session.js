@@ -132,10 +132,7 @@ module.exports = (main) => {
   }
 
   update() {
-   if (exports.Session.prototype !== Object.getPrototypeOf(this)) {
-    Object.setPrototypeOf(this, exports.Session.prototype);
-    this.lastUpdateTime = new Date();
-   }
+   exports.utils.changePrototypeOf(this, exports.Session.prototype);
   }
 
   async updateData(newData) {

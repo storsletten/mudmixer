@@ -151,10 +151,9 @@ module.exports = main => {
   }
 
   update() {
-   if (exports.Middleware.prototype !== Object.getPrototypeOf(this)) {
-    Object.setPrototypeOf(this, exports.Middleware.prototype);
-    this.lastUpdateTime = new Date();
-   }
+   exports.utils.changePrototypeOf(this, exports.Middleware.prototype);
+   this.clientTriggers.update();
+   this.serverTriggers.update();
   }
 
   execute(args) {

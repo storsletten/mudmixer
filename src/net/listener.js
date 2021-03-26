@@ -133,10 +133,7 @@ module.exports = main => {
   }
 
   update() {
-   if (exports.Listener.prototype !== Object.getPrototypeOf(this)) {
-    Object.setPrototypeOf(this, exports.Listener.prototype);
-    this.lastUpdateTime = new Date();
-   }
+   exports.utils.changePrototypeOf(this, exports.Listener.prototype);
   }
  }
 

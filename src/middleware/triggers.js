@@ -118,9 +118,17 @@ module.exports = main => {
   }
  }
 
- class ClientTriggers extends Triggers {}
+ class ClientTriggers extends Triggers {
+  update() {
+   exports.utils.changePrototypeOf(this, exports.ClientTriggers.prototype);
+  }
+ }
 
- class ServerTriggers extends Triggers {}
+ class ServerTriggers extends Triggers {
+  update() {
+   exports.utils.changePrototypeOf(this, exports.ServerTriggers.prototype);
+  }
+ }
 
  exports.Triggers = Triggers;
  exports.ClientTriggers = ClientTriggers;
