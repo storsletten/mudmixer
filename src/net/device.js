@@ -237,7 +237,7 @@ module.exports = main => {
     const options = { noForwarding };
     const lines = (this.middleware && !skipMiddleware) ? this.middleware.action({ device, line, options, triggers: this.middleware[this.isClient() ? 'clientTriggers' : 'serverTriggers'] }).lines : [line];
     if (device !== this && this.socket && this.isClient()) lines.forEach(line => this.socket.write(`${line}${this.eol}`, 'binary'));
-    if (options.executed === undefined && this.isClient() && !this.hasActiveServers()) {
+    if (options.executed === undefined && this.isClient() && !line.startsWith('#$#') && !this.hasActiveServers()) {
      if (!this.session) device.tell(`Please use the CONNECT command to log in to a session.`);
      else if (this.session.servers.size === 0) device.tell(`This session has no server connections added. Please see MX HELP CA for information about how to add a connection.`);
      else {
