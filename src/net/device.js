@@ -234,6 +234,7 @@ module.exports = main => {
    // Either way, here middleware will be processed as client or server depending on this.isClient().
    if (this.destroyed || device.destroyed) return;
    lines.forEach(line => {
+    const time = new Date();
     const options = { noForwarding };
     const lines = (this.middleware && !skipMiddleware) ? this.middleware.action({ device, line, options, triggers: this.middleware[this.isClient() ? 'clientTriggers' : 'serverTriggers'] }).lines : [line];
     if (device !== this && this.socket && this.isClient()) lines.forEach(line => this.socket.write(`${line}${this.eol}`, 'binary'));
@@ -249,7 +250,7 @@ module.exports = main => {
     }
     if (!options.noForwarding) this.readPipes.forEach(d => d.pipe({ device, line, lines, options, operation: 'read' }));
     if (this.maxReadHistoryLength > 0) {
-     const historyOverflow = this.readHistory.push({ device, line, lines, options }) - this.maxReadHistoryLength;
+     const historyOverflow = this.readHistory.push({ device, line, lines, options, time }) - this.maxReadHistoryLength;
      if (historyOverflow > 0) this.readHistory.splice(0, historyOverflow);
     }
     else if (this.readHistory.length > 0) this.readHistory.length = 0;
@@ -278,6 +279,7 @@ module.exports = main => {
     return;
    }
    lines.forEach(line => {
+    const time = new Date();
     const options = { noForwarding };
     const lines = ((this.middleware && !skipMiddleware && this.isClient() !== device.isClient())
      ? this.middleware.action({ device, line, options, triggers: this.middleware[device.isClient() ? 'clientTriggers' : 'serverTriggers'] }).lines
@@ -286,7 +288,7 @@ module.exports = main => {
     if (this.socket && (!options.clientsOnly || this.isClient())) lines.forEach(line => this.socket.write(`${line}${this.eol}`, 'binary'));
     if (!options.noForwarding) this.writePipes.forEach(d => d.pipe({ device, line, lines, options, operation: 'write' }));
     if (this.maxWriteHistoryLength > 0) {
-     const historyOverflow = this.writeHistory.push({ device, line, lines, options }) - this.maxWriteHistoryLength;
+     const historyOverflow = this.writeHistory.push({ device, line, lines, options, time }) - this.maxWriteHistoryLength;
      if (historyOverflow > 0) this.writeHistory.splice(0, historyOverflow);
     }
     else if (this.writeHistory.length > 0) this.writeHistory.length = 0;
