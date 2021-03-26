@@ -5,6 +5,10 @@ module.exports = async (main, { force, hard } = {}) => {
 
  if (hard) {
   await require('./shutdown.js')(main);
+  exports.clientsCount = 0;
+  exports.serversCount = 0;
+  exports.listenersCount = 0;
+  await (exports.initPromise = require('./initialize.js')(main));
   await require('./start.js')(main);
  }
  else {
