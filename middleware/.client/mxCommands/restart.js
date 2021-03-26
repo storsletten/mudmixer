@@ -22,8 +22,9 @@ module.exports = (main, middleware) => {
    const flagsString = Object.keys(flags).sort().join(', ');
    device.tell(`Restarting${flagsString ? ` (${flagsString})` : ''} ...`);
    exports.log(`${device.title()} initiated a restart. Flags: ${flagsString || 'none'}.`);
-   await exports.restart(flags);
-   device.tell(`Done.`);
+   const success = await exports.restart(flags);
+   if (success) device.tell(`Done.`);
+   else if (!flags.hard) device.tell(`You might need to do a hard restart by typing: mx r hard`);
   },
  };
 };
