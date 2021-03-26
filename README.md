@@ -1,4 +1,6 @@
 # MUDMixer
+*** Currently beta testing! No official release is ready yet. ***
+
 MUDMixer is a MUD client add-on with middleware support for customizing the traffic between clients and servers in a many-to-many relationship.
 
 ## Installation
