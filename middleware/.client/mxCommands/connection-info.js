@@ -9,7 +9,7 @@ module.exports = (main, middleware) => {
    `If no name is provided, this command lists the outgoing (server) connections associated with the current session.`,
   ],
   action: function({ device, argstr }) {
-   if (device.session.servers.size === 0) return device.tell(`There are no server connections to view.`);
+   if (device.session.servers.size === 0) return device.tell(`There are no server connections to view in ${device.session.title()}.`);
    const serverName = argstr.trim();
    if (serverName) {
     const server = device.session.getServer(serverName);

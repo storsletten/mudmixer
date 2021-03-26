@@ -262,6 +262,7 @@ module.exports = main => {
   menu(options) { return this.setInterceptor(new exports.Menu({ ...(exports.utils.isRegularObject(options) ? options : { choices: (Array.isArray(options) ? options : [options]) }), middleware: this, device: this.device })).action.promise; }
   optionsMenu(options) { return exports.optionsMenu({ device: this.device, ...options, middleware: this }); }
   prompt(options = {}) { return this.setInterceptor(new exports.Prompt({ ...(exports.utils.isRegularObject(options) ? options : { message: options }), middleware: this, device: this.device })).action.promise; }
+  selectServer(options) { return exports.selectServer({ device: this.device, ...options, middleware: this }); }
   suspend(time) { return (new exports.Suspend({ middleware: this, device: this.device, time })).promise; }
  }
 

@@ -7,10 +7,8 @@ module.exports = (main, middleware) => {
   help: [
    `This command manages connection logging.`,
   ],
-  action: function({ device, middleware, argstr }) {
-   const serverName = argstr.trim();
-   const server = device.session.getServer(serverName);
-   if (!server) return device.tell(`There is no connection with that name.`);
+  action: async function({ device, middleware, argstr }) {
+   const server = await middleware.selectServer({ argstr });
    const serverOptions = server.serverOptions;
    (async () => {
     while (!device.destroyed) {

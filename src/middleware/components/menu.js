@@ -21,6 +21,7 @@ module.exports = main => {
     // If default choice is undefined, then the menu will be rejected if the user sends a blank line.
     this.defaultChoice = options.defaultChoice;
     this.message = options.message;
+    this.invalidSelectionMessage = options.invalidSelectionMessage;
     this.prompt = options.prompt;
     // If options.argstr is a string, then the initial menu will not be displayed and argstr will be used as if it was entered as a line in the menu prompt.
     if (typeof options.argstr === 'string') this.execute({ ...options, line: options.argstr });
@@ -91,7 +92,7 @@ module.exports = main => {
      }
      if (newMatches.size === 0) {
       this.matches = undefined;
-      device.tell(middleware.messages.invalidSelection);
+      device.tell(this.invalidSelectionMessage || middleware.messages.invalidSelection);
       this.printMenu(args);
      }
      else if (newMatches.size === 1) this.resolve({ ...args, ...newMatches.values().next().value });
@@ -113,7 +114,7 @@ module.exports = main => {
      }
     }
     else {
-     device.tell(middleware.messages.invalidSelection);
+     device.tell(this.invalidSelectionMessage || middleware.messages.invalidSelection);
      this.reject({ ...args, reason: 'invalidSelection' });
     }
    }

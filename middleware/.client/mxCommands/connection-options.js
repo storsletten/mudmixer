@@ -7,11 +7,8 @@ module.exports = (main, middleware) => {
   help: [
    `This command changes options for an outgoing (server) connection.`,
   ],
-  action: function({ device, middleware, argstr }) {
-   const serverName = argstr.trim();
-   if (!serverName) return device.tell(`Syntax: ${this.name} ${this.syntax}`);
-   const server = device.session.getServer(serverName);
-   if (!server) return device.tell(`There is no connection with that name.`);
+  action: async function({ device, middleware, argstr }) {
+   const server = await middleware.selectServer({ argstr });
    const template = {
     host: {
      name: 'Host Name',
