@@ -23,7 +23,10 @@ module.exports = main => {
   if (!baseName) throw new Error(`Missing baseName`);
   else if (!dirName) throw new Error(`Missing dirName`);
   dirName = path.resolve(dirName);
-  const textEditor = (device && device.session && device.session.data.options.textEditor) || exports.config.textEditor || 'notepad';
+  const textEditor = (platform === 'win32'
+   ? (device && device.session && device.session.data.options.textEditor) || exports.config.textEditor || 'notepad'
+   : '${EDITOR:-nano}'
+  );
   const filePath = path.join(dirName, baseName);
   const watcher = exports.directoryWatchers.get(dirName);
   const fileIgnored = watcher && watcher.ignoreFile({ name: baseName });
@@ -40,7 +43,15 @@ module.exports = main => {
  };
 
  const run = (app, args = [], options = {}) => {
-  if (platform === 'win32') {
+  if (platform === 'linux') {
+   childProcess.spawn('/bin/bash', ['/c', app, ...(Array.isArray(args) ? args : [args])], {
+    ...options,
+    detached: true,
+    stdio: 'ignore',
+   }).unref();
+   return true;
+  }
+  else if (platform === 'win32') {
    childProcess.spawn('cmd.exe', ['/C', 'start', '""', app, ...(Array.isArray(args) ? args : [args])], {
     ...options,
     windowsHide: true,
