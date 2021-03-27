@@ -23,9 +23,12 @@ module.exports = main => {
   if (!baseName) throw new Error(`Missing baseName`);
   else if (!dirName) throw new Error(`Missing dirName`);
   dirName = path.resolve(dirName);
-  const textEditor = (platform === 'win32'
-   ? (device && device.session && device.session.data.options.textEditor) || exports.config.textEditor || 'notepad'
-   : '${EDITOR:-nano}'
+  const textEditor = (
+      (device && device.session && device.session.data.options.textEditor)
+   || exports.config.textEditor
+   || (platform === 'linux' && 'nano')
+   || (platform === 'win32' && 'notepad')
+   || 'notepad'
   );
   const filePath = path.join(dirName, baseName);
   const watcher = exports.directoryWatchers.get(dirName);
@@ -43,24 +46,32 @@ module.exports = main => {
  };
 
  const run = (app, args = [], options = {}) => {
-  if (platform === 'linux') {
-   childProcess.spawn('/bin/bash', ['/c', app, ...(Array.isArray(args) ? args : [args])], {
-    ...options,
-    detached: true,
-    stdio: 'ignore',
-   }).unref();
+  if (!Array.isArray(args)) args = (args ? [args] : []);
+  const cp = (
+   (
+    platform === 'linux' && childProcess.spawn(app, args, {
+     ...options,
+     detached: true,
+     stdio: 'inherit',
+    })
+   ) || (
+    platform === 'win32' && childProcess.spawn('cmd.exe', ['/C', 'start', '""', app, ...args], {
+     ...options,
+     windowsHide: true,
+     detached: true,
+     stdio: 'ignore',
+    })
+   )
+  );
+  if (cp) {
+   cp.on('error', error => exports.log(`Failed to run ${JSON.stringify(app)}:`, error));
+   cp.unref();
    return true;
   }
-  else if (platform === 'win32') {
-   childProcess.spawn('cmd.exe', ['/C', 'start', '""', app, ...(Array.isArray(args) ? args : [args])], {
-    ...options,
-    windowsHide: true,
-    detached: true,
-    stdio: 'ignore',
-   }).unref();
-   return true;
+  else {
+   exports.log(`run() not currently supported on this platform.`);
+   return false;
   }
-  else exports.log(`run() not currently supported on this platform.`);
  };
 
  const powershell = (command, options = {}) => {

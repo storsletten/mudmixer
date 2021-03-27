@@ -11,7 +11,7 @@ module.exports = async (main) => {
 
  // Default configuration.
  const currentDefaultConfig = {
-  textEditor: 'notepad', // A path to an executable that will be used with local edit.
+  textEditor: '', // A path to an executable that will be used with local edit.
   maxJournalSize: 50, // The maximum number of entries in exports.journal before it starts removing the oldest entry.
   defaultLogger: {
    name: '', // The logger name that will be used if no logger name is specified when using MX CL.
