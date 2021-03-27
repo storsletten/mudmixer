@@ -10,7 +10,7 @@ module.exports = (main) => {
    this.data = {
     options: {
      runInBackground: false,
-     textEditor: exports.config.textEditor || '',
+     textEditor: '',
      defaultLogger: {},
     },
     servers: [],
