@@ -106,12 +106,12 @@ module.exports = main => {
    this.read({ device: this, lines: [`Disconnected ${this.name || this.title()}.`] });
   }
 
-  prepareReconnect() {
-   if (!this.serverOptions) throw new Error(`${this.title()} has no serverOptions to use for reconnecting.`);
-   else if (this.listener) throw new Error(`${this.title()} can't reconnect to a listener.`);
+  prepareReconnect(delay) {
+   if (this.destroyed) return;
+   else if (!this.serverOptions) throw new Error(`${this.title()} has no serverOptions to use for reconnecting.`);
    else if (this.connectingTime) throw new Error(`${this.title()} is already connecting.`);
    else if (this.serverOptions.reconnect !== false && (!this.session || this.session.active)) {
-    this.timers.setTimeout('reconnecting', this.serverOptions.reconnectInterval || 3000, () => this.reconnect());
+    this.timers.setTimeout('reconnecting', delay || this.serverOptions.reconnectInterval || 3000, () => this.reconnect());
    }
   }
   reconnect() {
@@ -143,6 +143,7 @@ module.exports = main => {
     else {
      if (!this.connectingTime && !this.reconnectingTime) exports.log(`${this.title()} ${ended ? `was disconnected by the server` : `disconnected`}.`);
      if (this.serverOptions && (this.serverOptions.reconnectAggressively || !ended)) this.prepareReconnect();
+     this.events.emit(ended ? 'remoteSocketClose' : 'socketClose');
     }
    });
   }
