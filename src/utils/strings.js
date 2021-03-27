@@ -210,6 +210,14 @@ module.exports = main => {
   else return '';
  };
 
+ // Function to escape Extended ASCII characters. This assumes the string is binary encoded.
+ // It converts characters between 128 and 255 (signed chars) into hex values prefixed with: \x
+ const escape = str => str.replace(/[\x80-\xff]/g, char => `\\x${char.charCodeAt(0).toString(16).toUpperCase()}`);
+
+ // This unescape function naively unescapes everything. If it becomes a problem, then I'm happy to make it more restrictive.
+ // E.g. if we only want UTF8, then that's between 128 and 239. But unfortunately Extended ASCII goes all the way up to 255, which is also where IAC and other yummy things live.
+ const unescape = str => str.replace(/\\+x[0-9A-F]{2}/g, seq => ((seq.length % 2) ? seq : `${seq.slice(0, -4)}${String.fromCharCode(parseInt(seq.slice(-2), 16))}`));
+
  const formatConsoleLogArgs = (...args) => args.map(arg => stringify(arg)).join(' ');
 
  return {
@@ -237,5 +245,7 @@ module.exports = main => {
   sanitizeFileName,
   invalidFileName,
   stringify,
+  escape,
+  unescape,
  };
 };
