@@ -29,7 +29,10 @@ module.exports = (main, middleware) => {
      const [ packageName, enable ] = choices[choiceIndex];
      if (connection.middleware.packages.has(packageName) === enable) device.tell(`That middleware is already ${enable ? 'enabled' : 'disabled'}.`);
      else {
-      if (enable) await connection.middleware.loadPackage(packageName);
+      if (enable) {
+       const success = await connection.middleware.loadPackage(packageName);
+       if (!success) continue;
+      }
       else connection.middleware.unloadPackage(packageName);
       if (device === connection) device.tell(`${enable ? 'Enabled' : 'Disabled'} ${packageName}.`);
       else {
