@@ -26,7 +26,7 @@ module.exports = main => {
   const textEditor = (
       (device && device.session && device.session.data.options.textEditor)
    || exports.config.textEditor
-   || (platform === 'linux' && 'nano')
+   || (platform === 'linux' && '${EDITOR:-nano}')
    || (platform === 'win32' && 'notepad')
    || 'notepad'
   );
@@ -52,6 +52,7 @@ module.exports = main => {
     platform === 'linux' && childProcess.spawn(app, args, {
      ...options,
      detached: true,
+     shell: true,
      stdio: 'inherit',
     })
    ) || (
