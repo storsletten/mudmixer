@@ -97,6 +97,7 @@ module.exports = main => {
 
   async loadPackage(name, path) {
    if (this.destroyed) return;
+   else if (this.loadingPackage) throw new Error(`${this.title()} is already loading ${this.loadingPackage}.`);
    else if (!name) throw new Error(`Cannot load a middleware package without a name.`);
    else if (this.packages.has(name)) throw new Error(`${this.title()} has a package named ${name} already.`);
    if (!path) {

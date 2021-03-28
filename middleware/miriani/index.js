@@ -6,5 +6,6 @@ module.exports = async (main, middleware) => {
  // Miriani always sends proper EOL, so no need for buffer TTL.
  if (device.serverOptions) device.serverOptions.bufferTTL = 0;
 
+ require('./reconnecting.js')(main, middleware);
  require('./registerSoundpack.js')(main, middleware);
 };

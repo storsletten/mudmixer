@@ -1,4 +1,5 @@
 // This script handles special negotiation with Proxiani.
+// Since Proxiani is specificly designed for use with Miriani, this script will automatically load the miriani middleware when Proxiani is detected (unless it's already loaded).
 
 module.exports = (main, middleware) => {
  const exports = main.exports;
@@ -8,7 +9,7 @@ module.exports = (main, middleware) => {
   const match = argstr.match(/^version (\d{1,5}\.\d{1,5}\.\d{1,5})$/);
   if (match) {
    device.tellServer(`#$#mx version ${exports.package.version || 'unknown'}`);
-   device.events.on('remoteSocketClose', () => device.prepareReconnect(500));
+   if (!middleware.packages.has('miriani')) middleware.loadPackage('miriani');
   }
  });
 };
