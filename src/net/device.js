@@ -129,7 +129,7 @@ module.exports = main => {
     this.bufferedData = data[data.length - 1];
     if (this.serverOptions && this.serverOptions.bufferTTL > 0) {
      // Using bufferTTL (time to live) to determine how long to wait before flushing the buffer if no end of line/record has been received.
-     if (this.bufferedData) {
+     if (this.bufferedData && !this.bufferedData.startsWith('#$#')) {
       this.timers.setTimeout('bufferFlush', this.serverOptions.bufferTTL, () => {
        if (this.bufferedData && this.socketEvents) this.socketEvents.emit('data', "\n");
       });
