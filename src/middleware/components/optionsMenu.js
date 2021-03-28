@@ -45,8 +45,9 @@ module.exports = main => {
     templateKey = templateKeys[choiceIndex];
    }
    if (templateKey) {
-    const { name, type, message, abortOnBlank } = template[templateKey];
+    const { name, type, description, message, abortOnBlank } = template[templateKey];
     let value;
+    if (description && !argstr) device.tell(description);
     if (type === 'string') {
      value = await middleware.prompt({
       message: (message || `Enter a value for the ${name} option:`),
