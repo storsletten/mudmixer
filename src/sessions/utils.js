@@ -9,6 +9,7 @@ module.exports = main => {
   [/(^|\.)toastsoft\.net:\d+$/, {
    name: 'miriani',
    middleware: ['miriani'],
+   bufferTTL: 0,
    readLoggers: ['miriani'],
   }],
  ]);
