@@ -60,6 +60,7 @@ module.exports = main => {
      reconnect: true,
      reconnectAggressively: false,
      reconnectInterval: 3000,
+     bufferTTL: 250,
      acceptLocalEdit: true,
      middleware: [],
      readLoggers: [''],

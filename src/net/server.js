@@ -173,6 +173,7 @@ module.exports = main => {
   }
 
   update() {
+   super.update();
    exports.utils.changePrototypeOf(this, exports.Server.prototype, { depth: 2 });
   }
  }

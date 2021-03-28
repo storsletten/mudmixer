@@ -10,8 +10,13 @@ module.exports = main => {
    this.destroyed = false;
    this.maxReadHistoryLength = 50;
    this.maxWriteHistoryLength = 10;
+   this.maxIACHistoryLength = 10;
    this.readHistory = [];
    this.writeHistory = [];
+   this.iacHistory = [];
+   this.telnetOptions = {
+    eor: false,
+   };
    this.pipesFrom = new Set();
    this.readPipes = new Set();
    this.writePipes = new Set();
@@ -81,9 +86,10 @@ module.exports = main => {
    if (this.socket) this.unsetSocket();
    if (this.session) this.unsetSession();
    if (this.label) this.unsetLabel();
+   exports.devices.delete(this);
    this.readHistory.length = 0;
    this.writeHistory.length = 0;
-   exports.devices.delete(this);
+   this.iacHistory.length = 0;
   }
 
   setSocket(socket) {
@@ -112,12 +118,24 @@ module.exports = main => {
     // (data MUST be binary encoded String)
     data = data.replace(/\xff[\xf0-\xff]./gs, iac => (this.iacHandle(iac) || ''))
      .replace(/[^\n\r\t\x1b\x20-\xff]/g, '')
-     .split(/(?:\r\n|\n\r|\r|\n)/);
+     .split(
+      this.telnetOptions.eor ? (
+       /(?:\r\n|\n\r|\r|\n|\xff\xef)/
+      ) : (
+       /(?:\r\n|\n\r|\r|\n)/
+      )
+     );
     if (this.bufferedData.length > backtrack) data[0] = `${this.bufferedData.slice(0, -backtrack)}${data[0]}`;
     this.bufferedData = data[data.length - 1];
-    // The following line of code may be needed for certain MOOs that don't effing end their prompts with proper line breaks.
-    // However I comment it out because it can also potentially add unwanted line breaks. Maybe I'll add a config option for it if somebody wants it.
-    // if (this.bufferedData.endsWith('? ')) data.push(this.bufferedData = '');
+    if (this.serverOptions && this.serverOptions.bufferTTL > 0) {
+     // Using bufferTTL (time to live) to determine how long to wait before flushing the buffer if no end of line/record has been received.
+     if (this.bufferedData) {
+      this.timers.setTimeout('bufferFlush', this.serverOptions.bufferTTL, () => {
+       if (this.bufferedData && this.socketEvents) this.socketEvents.emit('data', "\n");
+      });
+     }
+     else this.timers.delete('bufferFlush');
+    }
     if (data.length > 1) this.read({ device: this, lines: data.slice(0, -1) });
     else if (this.bufferedData.length > this.maxLineLength) {
      exports.log(`${this.title()} exceeded the max line length of ${this.maxLineLength} characters.`);
@@ -220,9 +238,48 @@ module.exports = main => {
   }
 
   iacHandle(iac) {
-   if (iac.length === 3 && iac[0] === "\xff" && (iac[1] === "\xfb" || iac[1] === "\xfd")) {
-    // Rejecting IAC for now.
-    if (this.socket) this.socket.write(`\xff${iac[1] === "\xfb" ? "\xfe" : "\xfc"}${iac[2]}`, 'binary');
+   // Telnet Protocol, RFC 854:
+   // https://tools.ietf.org/html/rfc854
+
+   // Dec Hex Name
+   // 251 FB  WILL
+   // 252 FC  WONT
+   // 253 FD  DO
+   // 254 FE  DONT
+
+   const record = {
+    received: iac,
+    sent: '',
+    time: new Date(),
+    action: '',
+   };
+   if (this.maxIACHistoryLength > 0) {
+    const historyOverflow = this.iacHistory.push(record) - this.maxIACHistoryLength;
+    if (historyOverflow > 0) this.iacHistory.splice(0, historyOverflow);
+   }
+   if (iac.length === 3 && iac[0] === "\xff") {
+    if (iac[1] === "\xfb" || iac[1] === "\xfd") {
+     // IAC WILL or DO something
+     if (iac === "\xff\xfb\x19") {
+      // IAC WILL TELOPT_EOR
+      // 255 251  25
+      record.action = 'accept';
+      this.telnetOptions.eor = true;
+     }
+     else record.action = 'reject';
+     if (record.action && this.socket) {
+      if (record.action === 'reject') this.socket.write(record.sent = `\xff${iac[1] === "\xfb" ? "\xfe" : "\xfc"}${iac[2]}`, 'binary');
+      else if (record.action === 'accept') this.socket.write(record.sent = `\xff${iac[1] === "\xfb" ? "\xfd" : "\xfb"}${iac[2]}`, 'binary');
+     }
+    }
+    else if (iac[1] === "\xfc" || iac[1] === "\xfe") {
+     // IAC WONT or DONT something
+     if (iac === "\xff\xfc\x19") {
+      // IAC WONT TELOPT_EOR
+      // 255 252  25
+      this.telnetOptions.eor = false;
+     }
+    }
    }
   }
 
@@ -342,6 +399,15 @@ module.exports = main => {
     if (this.ignore.has(device)) return;
     if (options.clientsOnly !== true || this.isClient()) this.write({ device, lines, skipMiddleware: operation === 'write' });
    }
+  }
+
+  update() {
+   // History buffers added on 2021-03-27.
+   if (!this.iacHistory) this.iacHistory = [];
+   if (!this.readHistory) this.readHistory = [];
+   if (!this.writeHistory) this.writeHistory = [];
+   // telnetOptions added on 2021-03-28
+   if (!this.telnetOptions) this.telnetOptions = {};
   }
  }
 

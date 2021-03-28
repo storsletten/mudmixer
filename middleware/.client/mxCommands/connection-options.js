@@ -38,6 +38,10 @@ module.exports = (main, middleware) => {
      name: 'Reconnect Interval',
      type: 'number',
     },
+    bufferTTL: {
+     name: 'Buffer TTL',
+     type: 'number',
+    },
     acceptLocalEdit: {
      name: 'Accept Local Edit Requests',
      type: 'boolean',
