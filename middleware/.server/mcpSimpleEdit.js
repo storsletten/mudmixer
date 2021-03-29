@@ -8,22 +8,32 @@ module.exports = (main, middleware) => {
 
  middleware.setServerCommand('#$#dns-org-mud-moo-simpleedit-content', ({ device, argstr }) => {
   if (!device.mcp) return;
-  else if (!argstr.startsWith(device.mcp.authKey || '')) return;
+  else if (device.serverOptions && !device.serverOptions.acceptLocalEdit) return;
+  else if (!argstr.startsWith(device.mcp.authKey)) return;
   else {
-   const match = argstr.match(/reference: (.+?) name: "(.+?)" type: (.+?) content(\*?): "(.*?)" _data-tag: (.+)/);
+   const match = argstr.slice(device.mcp.authKey.length).match(/^ reference: (.+?) name: (.+?) type: (.+?) content(\*?): (.+) _data-tag: (.+)$/);
    if (match) {
     if (!device.mcp.simpleEdit) device.mcp.simpleEdit = {};
     const simpleEdit = device.mcp.simpleEdit;
     if (!simpleEdit.sessions) simpleEdit.sessions = new Map();
-    const [ , reference, name, type, isMultiline, content, tag] = match;
+    const isMultiline = Boolean(match[4]);
+    const rawFields = [...match.slice(1, 4), ...match.slice(5, 7)];
+    const fields = rawFields.map(str => {
+     if (str.length > 1 && str[0] === '"' && str.endsWith('"')) {
+      try { return JSON.parse(str); }
+      catch (error) { return str.slice(1, -1); }
+     }
+     else return str;
+    });
+    const [ rawReference, rawName, rawType, rawContent, rawTag ] = rawFields;
+    const [ reference, name, type, content, tag ] = fields;
     const session = {
-     reference, name, type, tag,
+     reference, name, type, isMultiline, tag,
      content: (content ? [content] : []),
-     isMultiline: Boolean(isMultiline),
      time: new Date(),
      callback: () => {
       simpleEdit.sessions.delete(tag);
-      if (device.destroyed || !device.serverOptions || !device.serverOptions.acceptLocalEdit) return;
+      if (device.destroyed) return;
       const dirName = exports.dataPath('tmp');
       const baseName = `${exports.utils.sanitizeFileName(reference) || 'tmp'}.txt`;
       const filePath = path.join(dirName, baseName);
@@ -34,7 +44,7 @@ module.exports = (main, middleware) => {
         if (!device.destroyed && device.socket) {
          const tag = crypto.randomBytes(3).toString('hex');
          const lines = [
-          `#$#dns-org-mud-moo-simpleedit-set ${device.mcp.authKey} reference: ${reference} type: ${type} content*: "" _data-tag: ${tag}`,
+          `#$#dns-org-mud-moo-simpleedit-set ${device.mcp.authKey} reference: ${rawReference} type: ${rawType} content*: "" _data-tag: ${tag}`,
           ...fileContent.split(/\r\n|\r|\n/).map(line => `#$#* ${tag} content: ${line}`),
           `#$#: ${tag}`,
           '',
