@@ -196,10 +196,13 @@ module.exports = main => {
     }
    }
    // Functions.
+   // Be aware that options.continue is considered false by default for functions.
    for (let [name, data] of triggers.getType('fn')) {
     this.execute({ ...args, ...data, type: 'fn' });
-    if (options.continue) options.continue = undefined;
-    else return args;
+    if (options.continue !== undefined) {
+     if (options.continue) options.continue = undefined;
+     else return args;
+    }
    }
    // Case-sensitive triggers.
    const csFound = triggers.getType('cs').get(line);
