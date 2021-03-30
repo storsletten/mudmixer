@@ -207,7 +207,12 @@ module.exports = main => {
        const hash = crypto.createHash('sha256').update(content).digest();
        if (hash.compare(file.hash) !== 0) {
         file.hash = hash;
-        if (!ignore) this.invokeCallbacks({ ...invokeParams, fileContent: content.toString() });
+        if (!ignore) {
+         let fileContent = content.toString();
+         // Remove UTF-8 BOM (if any)
+         if (fileContent.startsWith(`\xef\xbb\xbf`)) fileContent = fileContent.slice(3);
+         this.invokeCallbacks({ ...invokeParams, fileContent });
+        }
        }
       }
      }
