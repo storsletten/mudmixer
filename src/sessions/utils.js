@@ -5,7 +5,25 @@ const path = require('path');
 module.exports = main => {
  const exports = main.exports;
 
- const knownHosts = new Map([
+ exports.defaultServerOptions = {
+  name: undefined,
+  host: undefined,
+  port: undefined,
+  tls: undefined,
+  loginCommand: undefined,
+  disabled: false,
+  reconnect: true,
+  reconnectAggressively: false,
+  reconnectInterval: 3000,
+  bufferTTL: 250,
+  acceptLocalEdit: true,
+  ascii: true,
+  middleware: [],
+  readLoggers: [''],
+  writeLoggers: [],
+ };
+
+ exports.knownHosts = new Map([
   [/(^|\.)toastsoft\.net:\d+$/, {
    name: 'miriani',
    middleware: ['miriani'],
@@ -53,21 +71,13 @@ module.exports = main => {
    if (isFinite(port) && port > 0 && port < 65536) {
     const lookupstr = `${m[1]}:${m[3]}`;
     const options = {
-     name: undefined,
+     ...JSON.parse(JSON.stringify(exports.defaultServerOptions)),
      host: m[1],
      port,
      tls: Boolean(m[2]),
      loginCommand: m[4],
-     reconnect: true,
-     reconnectAggressively: false,
-     reconnectInterval: 3000,
-     bufferTTL: 250,
-     acceptLocalEdit: true,
-     middleware: [],
-     readLoggers: [''],
-     writeLoggers: [],
     };
-    for (let [re, opt] of knownHosts) {
+    for (let [re, opt] of exports.knownHosts) {
      if (lookupstr.match(re)) {
       Object.assign(options, JSON.parse(JSON.stringify(opt)));
       break;

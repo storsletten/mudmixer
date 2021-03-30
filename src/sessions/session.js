@@ -91,6 +91,8 @@ module.exports = (main) => {
    if (this.destroyed) return;
    if (this.getServer(serverOptions.name)) throw new Error(`A server with the name ${JSON.stringify(serverOptions.name)} already exists in ${this.title()}.`);
    const lcName = serverOptions.name.toLowerCase();
+   exports.utils.pruneRegularObject(serverOptions, exports.defaultServerOptions, { fix: true });
+   exports.utils.mergeRegularObject(serverOptions, exports.defaultServerOptions, { overwrite: false });
    if (!this.data.servers.some(options => options.name.toLowerCase() === lcName)) {
     this.data.servers.push(serverOptions);
    }
