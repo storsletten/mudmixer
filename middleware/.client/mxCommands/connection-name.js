@@ -2,17 +2,18 @@ module.exports = (main, middleware) => {
  const exports = main.exports;
 
  return {
-  syntax: `name`,
+  syntax: `[new name]`,
   aliases: ['cn', 'cname', 'name-connection', 'rename-connection', 'connection-rename'],
   help: [
-   `This command renames an outgoing (server) connection.`,
+   `This command renames the server connection that you are currently set to transmit to.`,
   ],
   action: async function({ device, middleware, argstr }) {
-   const server = await middleware.selectServer({ argstr });
-   const newServerName = await middleware.prompt({
+   const server = device.getServer();
+   if (!server) return device.tell(`You are not connected to a server.`);
+   const newServerName = argstr || (await middleware.prompt({
     abortOnBlank: true,
     message: `Enter a new name for the ${server.name || server.title()} connection:`,
-   });
+   }));
    const invalidCharacters = exports.utils.invalidFileName(newServerName);
    if (invalidCharacters) return device.tell(`The new name can't contain ${invalidCharacters.join(', ')}`);
    const oldName = server.name;
