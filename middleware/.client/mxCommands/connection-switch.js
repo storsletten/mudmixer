@@ -26,25 +26,32 @@ module.exports = (main, middleware) => {
    }
    else {
     const serverName = argstr.trim();
-    const server = device.session.getServer(serverName);
-    if (!server) {
+    const newServer = device.session.getServer(serverName);
+    if (!newServer) {
      const match = serverName.match(/^([^ ]+) +(.+)/);
      if (match) {
       const [ , serverName, command ] = match;
-      const server = device.session.getServer(serverName);
-      if (server) {
-       if (server.isActive()) server.tellServer(command);
-       else device.tell(`${server.name || server.title()} is not connected.`);
+      const newServer = device.session.getServer(serverName);
+      if (newServer) {
+       if (newServer.isActive()) newServer.tellServer(command);
+       else device.tell(`${newServer.name || newServer.title()} is not connected.`);
       }
       else device.tell(`There is no connection named ${serverName}.`);
      }
      else device.tell(`There is no connection named ${serverName}.`);
     }
-    else if (connectedServers.includes(server)) device.tell(`You are already transmitting to ${server.name || server.title()}.`);
+    else if (connectedServers.includes(newServer)) device.tell(`You are already transmitting to ${newServer.name || newServer.title()}.`);
     else {
-     device.switchServer(server);
-     if (device.ignore.delete(server)) device.tell(`${server.name} (ungagged)`);
-     else device.tell(server.name);
+     device.switchServer(newServer);
+     if (device.gagMode === 'focused') {
+      device.getServers(device.pipesFrom).forEach(server => {
+       if (server === newServer) device.ignore.delete(server);
+       else device.ignore.add(server);
+      });
+      device.tell(newServer.name);
+     }
+     else if (device.ignore.has(newServer)) device.tell(`${newServer.name} (gagged)`);
+     else device.tell(newServer.name);
     }
    }
   },

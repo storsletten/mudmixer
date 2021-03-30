@@ -363,40 +363,40 @@ module.exports = main => {
 
   isActive() { return Boolean(this.socket && !this.socket.destroyed && !this.connectingTime && !this.reconnectingTime); }
 
-  getClient() {
-   for (let device of this.readPipes) {
+  getClient(devices = this.readPipes) {
+   for (let device of devices) {
     if (device.isClient()) return device;
    }
   }
-  getActiveClient() {
+  getActiveClient(devices = this.readPipes) {
    // An active client in this context means a client that is currently set to transmit to "this" device.
-   for (let device of this.readPipes) {
+   for (let device of devices) {
     if (device.isClient() && device.readPipes.has(this)) return device;
    }
   }
-  getClients() { return [...this.readPipes].filter(device => device.isClient()); }
-  getActiveClients() { return [...this.readPipes].filter(device => device.isClient() && device.readPipes.has(this)); }
+  getClients(devices = this.readPipes) { return [...devices].filter(device => device.isClient()); }
+  getActiveClients(devices = this.readPipes) { return [...devices].filter(device => device.isClient() && device.readPipes.has(this)); }
   hasClients() { return Boolean(this.getClient()); }
   hasActiveClients() { return Boolean(this.getActiveClient()); }
 
-  getServer() {
-   for (let device of this.readPipes) {
+  getServer(devices = this.readPipes) {
+   for (let device of devices) {
     if (!device.isClient()) return device;
    }
   }
-  getActiveServer() {
-   for (let device of this.readPipes) {
+  getActiveServer(devices = this.readPipes) {
+   for (let device of devices) {
     if (!device.isClient() && device.isActive()) return device;
    }
   }
-  getServers() { return [...this.readPipes].filter(device => !device.isClient()); }
-  getActiveServers() { return [...this.readPipes].filter(device => !device.isClient() && device.isActive()); }
+  getServers(devices = this.readPipes) { return [...devices].filter(device => !device.isClient()); }
+  getActiveServers(devices = this.readPipes) { return [...devices].filter(device => !device.isClient() && device.isActive()); }
   hasServers() { return Boolean(this.getServer()); }
   hasActiveServers() { return Boolean(this.getActiveServer()); }
 
   pipe({ device, line, lines, operation, options }) {
    if (lines.length > 0) {
-    if (this.ignore.has(device)) return;
+    if (this.ignore.has(device) && (this.gagMode !== 'hybrid' || !this.readPipes.has(device))) return;
     if (options.clientsOnly !== true || this.isClient()) this.write({ device, lines, skipMiddleware: operation === 'write' });
    }
   }

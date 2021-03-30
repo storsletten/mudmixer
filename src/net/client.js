@@ -3,6 +3,11 @@ module.exports = main => {
  const Device = exports.Device;
 
  class Client extends Device {
+  constructor(options) {
+   super(options);
+   this.gagMode = 'hybrid';
+  }
+
   title() {
    return `Client ${this.id || '0'}`;
   }
@@ -79,6 +84,8 @@ module.exports = main => {
   update() {
    super.update();
    exports.utils.changePrototypeOf(this, exports.Client.prototype, { depth: 2 });
+   // Added gagMode on 2021-03-30
+   if (!this.gagMode) this.gagMode = 'hybrid';
   }
  }
 
