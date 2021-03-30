@@ -29,7 +29,7 @@ module.exports = (main, middleware) => {
     else if (connectedServers.includes(server)) device.tell(`You are already transmitting to ${server.name || server.title()}.`);
     else {
      device.switchServer(server);
-     if (device.ignore.has(server)) device.tell(`${server.name} (gagged)`);
+     if (device.ignore.delete(server)) device.tell(`${server.name} (ungagged)`);
      else device.tell(server.name);
     }
    }
