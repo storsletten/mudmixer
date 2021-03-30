@@ -22,7 +22,6 @@ module.exports = (main, middleware) => {
  return {
   sessionRequired: false,
   syntax: `[command]`,
-  commands: ['mxh'],
   aliases: ['h'],
   help: [
    `Shows information about an MX command.`,
