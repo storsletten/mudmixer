@@ -48,6 +48,8 @@ exports.initPromise = require('./initialize.js')(module).then(() => {
  exports.log(`${exports.title()} finished loading in ${exports.utils.formatThousands(Date.now() - exports.launchTime)} ms.`);
  // Auto start if the application was loaded directly (i.e. not through an import).
  if (require.main === module) {
-  exports.start().catch(startupErrorHandler);
+  exports.start().then(() => {
+   if (!exports.cmd.q) exports.utils.msgBox(`Started ${exports.title(true)}.`);
+  }).catch(startupErrorHandler);
  }
 }).catch(startupErrorHandler);
