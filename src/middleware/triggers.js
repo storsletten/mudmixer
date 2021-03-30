@@ -8,7 +8,7 @@ module.exports = main => {
    this.setType('cmd', new Map()); // Case-insensitive commands (verbs). Each key must be a single lowercase word.
    this.setType('ci', new Map()); // Case-insensitive triggers (keys must be lowercase).
    this.setType('cs', new Map()); // Case-sensitive triggers.
-   this.setType('fn', new Map()); // Functions. Keys are merely identifiers.
+   this.setType('fn', new Map()); // Functions. Keys are merely identifiers / names.
    this.setType('re', new Map()); // Regexp triggers.
   }
 

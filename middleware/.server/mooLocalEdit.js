@@ -1,77 +1,76 @@
-// https://github.com/sevenecks/lambda-moo-programming/blob/master/code/LocalEditing.md
-
 const path = require('path');
 
 module.exports = (main, middleware) => {
  const exports = main.exports;
 
- middleware.setServerTrigger('#$#', ({ device, argstr }) => {
+ middleware.setServerTrigger('fn', 'mooLocalEdit', ({ device, line }) => {
   if (!device.mcp) return;
-  else if (!argstr.startsWith(device.mcp.authKey || '')) return;
-  else {
-   const match = argstr.match(/reference: (.+?) name: "(.+?)" type: (.+?) content(\*?): "(.*?)" _data-tag: (.+)/);
-   if (match) {
-    if (!device.mcp.simpleEdit) device.mcp.simpleEdit = {};
-    const simpleEdit = device.mcp.simpleEdit;
-    if (!simpleEdit.sessions) simpleEdit.sessions = new Map();
-    const [ , reference, name, type, isMultiline, content, tag] = match;
-    const session = {
-     reference, name, type, tag,
-     content: (content ? [content] : []),
-     isMultiline: Boolean(isMultiline),
-     time: new Date(),
-     callback: () => {
-      simpleEdit.sessions.delete(tag);
-      const dirName = exports.dataPath('tmp');
-      const baseName = exports.utils.sanitizeFileName(reference);
-      const filePath = path.join(dirName, baseName);
-      middleware.localEdit({
-       filePath,
-       content: session.content,
-       callback: async ({ action, fileContent }) => {
-        if (!device.destroyed && device.socket) {
-         const tag = crypto.randomBytes(3).toString('hex');
-         const lines = [
-          `#$#dns-org-mud-moo-simpleedit-set ${device.mcp.authKey} reference: ${reference} type: ${type} content*: "" _data-tag: ${tag}`,
-          ...fileContent.split(/\r\n|\r|\n/).map(line => `#$#* ${tag} content: ${line}`),
-          '#$#:',
-          '',
-         ];
-         device.write({ device, lines, skipMiddleware: true, noForwarding: true });
-        }
-       },
-      });
+  else if (device.mcp.mooLocalEdit) {
+   // Means we are gathering data.
+   const ctx = device.mcp.mooLocalEdit;
+   if (line === '.') {
+    // End of content block
+    const dirName = exports.dataPath('tmp');
+    const baseName = `${exports.utils.sanitizeFileName(ctx.name) || 'tmp'}.txt`;
+    const filePath = path.join(dirName, baseName);
+    middleware.localEdit({
+     filePath,
+     content: ctx.content,
+     callback: async ({ action, fileContent }) => {
+      if (!device.destroyed && device.socket) {
+       const content = (fileContent ? fileContent.split(/\r\n|\r|\n/) : []);
+       await middleware.confirm({
+        message: `Ready to submit ${content.length === 1 ? 'that line' : `those ${content.length} lines`} of text after executing the following command: ${ctx.upload}`,
+        noMessage: `Not sending it.`,
+       });
+       const lines = [
+        ctx.upload,
+        ...content.map(line => {
+         if (line) {
+          if (line === '.') return '..';
+          else if (line.toLowerCase() === '@abort') return '.@abort';
+         }
+         return line;
+        }),
+        '.',
+        '',
+       ];
+       device.write({ device, lines, skipMiddleware: true, noForwarding: true });
+      }
      },
-    };
-    if (session.isMultiline) {
-     simpleEdit.sessions.set(tag, session);
-     simpleEdit.lastTag = tag;
-    }
-    else session.callback();
+    });
    }
+   else if ((Date.now() - ctx.time) > ctx.maxTime) {
+    exports.log(`MOO Local Edit error: Max time exceeded (${ctx.maxTime}+ ms).`);
+   }
+   else if (ctx.content.length >= ctx.maxLines) {
+    exports.log(`MOO Local Edit error: Max number of lines exceeded (${ctx.maxLines}+).`);
+   }
+   else return ctx.content.push(line);
+   device.mcp.mooLocalEdit = undefined;
   }
- });
-
- middleware.setServerCommand('#$#*', ({ device, argstr }) => {
-  if (!device.destroyed && device.mcp && device.mcp.simpleEdit && device.mcp.simpleEdit.sessions) {
-   const match = argstr.match(/^(.+?) content: (.*)$/);
+  else if (line.startsWith('#$# edit name: ')) {
+   if (device.serverOptions && !device.serverOptions.acceptLocalEdit) return;
+   const match = line.match(/^#\$# edit name: (.+) upload: (.+)$/);
    if (match) {
-    const [ , tag, line ] = match;
-    const simpleEdit = device.mcp.simpleEdit;
-    const session = simpleEdit.sessions.get(tag);
-    if (session) {
-     simpleEdit.lastTag = tag;
-     session.content.push(line);
-    }
+    const rawFields = match.slice(1, 3);
+    const fields = rawFields.map(str => {
+     if (str.length > 1 && str[0] === '"' && str.endsWith('"')) {
+      try { return JSON.parse(str); }
+      catch (error) { return str.slice(1, -1); }
+     }
+     else return str;
+    });
+    const [rawName, rawUpload] = rawFields;
+    const [name, upload] = fields;
+    device.mcp.mooLocalEdit = {
+     name, upload, rawName, rawUpload,
+     content: [],
+     maxLines: 1000,
+     maxTime: 10000,
+     time: new Date(),
+    };
    }
-  }
- });
-
- middleware.setServerCommand('#$#:', () => {
-  if (!device.destroyed && device.mcp && device.mcp.simpleEdit && device.mcp.simpleEdit.sessions) {
-   const simpleEdit = device.mcp.simpleEdit;
-   const session = simpleEdit.sessions.get(simpleEdit.lastTag);
-   if (session) session.callback();
   }
  });
 };

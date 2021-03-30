@@ -9,6 +9,8 @@ module.exports = async (main, middleware) => {
  require('./mcpSimpleEdit.js')(main, middleware);
  require('./mcpStatus.js')(main, middleware);
 
+ require('./mooLocalEdit.js')(main, middleware);
+
  require('./registerSoundpack.js')(main, middleware);
  require('./unregisterSoundpack.js')(main, middleware);
 
