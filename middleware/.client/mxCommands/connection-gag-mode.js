@@ -15,9 +15,9 @@ module.exports = (main, middleware) => {
    `If no mode is provided, then this command tells you what the current mode is.`,
   ],
   action: function({ device, argstr }) {
+   const modes = ['manual', 'focused', 'hybrid'];
    if (argstr) {
     const lcArgstr = argstr.toLowerCase();
-    const modes = ['manual', 'focused', 'hybrid'];
     const mode = modes.find(mode => mode.startsWith(lcArgstr));
     if (!mode) device.tell(`Valid gag modes are ${exports.utils.englishList(modes)}.`);
     else {
@@ -32,7 +32,10 @@ module.exports = (main, middleware) => {
      }
     }
    }
-   else device.tell(exports.utils.titlify(device.gagMode));
+   else {
+    device.tell(`Currently in ${device.gagMode} mode.`);
+    device.tell(`Valid gag modes are ${exports.utils.englishList(modes)}.`);
+   }
   },
  };
 };
