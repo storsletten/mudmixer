@@ -3,6 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `name`,
+  commands: ['mxcd'],
   aliases: ['cd', 'disconnect-connection'],
   help: [
    `This command disconnects an outgoing (server) connection within the current session.`,

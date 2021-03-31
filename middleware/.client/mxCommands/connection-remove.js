@@ -3,6 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `name`,
+  commands: ['mxcr'],
   aliases: ['cr', 'cremove', 'remove-connection'],
   help: [
    `This command removes an outgoing (server) connection from the current session.`,

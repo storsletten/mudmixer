@@ -3,6 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `name`,
+  commands: ['mxcc'],
   aliases: ['cc', 'connect-connection', 'reconnect-connection'],
   help: [
    `This command connects / reconnects an existing outgoing (server) connection within the current session.`,

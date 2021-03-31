@@ -3,6 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `name`,
+  commands: ['mxch'],
   aliases: ['ch', 'chistory', 'history-connection'],
   help: [
    `This command shows the most recent messages received from a server.`,

@@ -3,6 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[new name]`,
+  commands: ['mxcn'],
   aliases: ['cn', 'cname', 'name-connection', 'rename-connection', 'connection-rename'],
   help: [
    `This command renames the server connection that you are currently set to transmit to.`,

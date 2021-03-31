@@ -3,6 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `hostname ["TLS"]port [login command]`,
+  commands: ['mxca'],
   aliases: ['ca', 'cadd', 'add-connection'],
   help: [
    `This command adds a new outgoing connection to the current session.`,
