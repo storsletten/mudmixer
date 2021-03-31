@@ -8,4 +8,7 @@ module.exports = async (main, middleware) => {
 
  require('./reconnecting.js')(main, middleware);
  require('./registerSoundpack.js')(main, middleware);
+
+ // Commands
+ require('./secho.js')(main, middleware);
 };
