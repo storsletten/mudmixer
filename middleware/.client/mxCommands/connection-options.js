@@ -55,6 +55,11 @@ module.exports = (main, middleware) => {
      description: `When this option is enabled, local edit requests from the server will be accepted.`,
      type: 'boolean',
     },
+    ascii: {
+     name: 'Primitive Unicode to ASCII translation',
+     description: `When this option is enabled, some UTF-8 characters will be translated to ASCII.`,
+     type: 'boolean',
+    },
    };
    const session = device.session;
    middleware.optionsMenu({

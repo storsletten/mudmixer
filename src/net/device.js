@@ -342,7 +342,10 @@ module.exports = main => {
      ? this.middleware.action({ device, line, options, triggers: this.middleware[device.isClient() ? 'clientTriggers' : 'serverTriggers'] }).lines
      : [line]
     );
-    if (this.socket && (!options.clientsOnly || this.isClient())) lines.forEach(line => this.socket.write(`${line}${this.eol}`, 'binary'));
+    if (this.socket && (!options.clientsOnly || this.isClient())) {
+     const ascii = this.serverOptions && this.serverOptions.ascii;
+     lines.forEach(line => this.socket.write(`${ascii ? exports.utils.unidecode(line) : line}${this.eol}`, 'binary'));
+    }
     if (!options.noForwarding) this.writePipes.forEach(d => d.pipe({ device, line, lines, options, operation: 'write' }));
     if (this.maxWriteHistoryLength > 0) {
      const historyOverflow = this.writeHistory.push({ device, line, lines, options, time }) - this.maxWriteHistoryLength;
