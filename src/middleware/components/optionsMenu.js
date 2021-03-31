@@ -15,9 +15,9 @@ module.exports = main => {
   while (!device.destroyed) {
    let templateKey;
    if (argstr) {
-    if (argstr.match(/^\d+$/)) {
+    if (argstr.match(/^\d{1,10}$/)) {
      const num = parseInt(argstr);
-     if (isNaN(num) || num < 1 || num > templateKeys.length) {
+     if (num < 1 || num > templateKeys.length) {
       device.tell(`Invalid selection.`);
       break;
      }
@@ -45,32 +45,46 @@ module.exports = main => {
     templateKey = templateKeys[choiceIndex];
    }
    if (templateKey) {
-    const { name, type, description, message, abortOnBlank } = template[templateKey];
-    let value;
-    if (description && !argstr) device.tell(description);
-    if (type === 'string') {
-     value = await middleware.prompt({
-      message: (message || `Enter a value for the ${name} option:`),
-      abortOnBlank,
-     });
-    }
-    else if (type === 'boolean') value = !options[templateKey];
-    else if (type === 'number') {
-     const line = await middleware.prompt({
-      message: (message || `Enter a value for the ${name} option:`),
-     });
-     const num = parseInt(line);
-     if (isNaN(num)) {
-      device.tell(`That's not a number.`);
-      break;
+    while (!device.destroyed) {
+     const { name, type, description, message, abortOnBlank } = template[templateKey];
+     let value;
+     if (description && !argstr) device.tell(description);
+     if (type === 'string') {
+      value = await middleware.prompt({
+       message: (message || `Enter a value for the ${name} option:`),
+       abortOnBlank,
+      });
      }
-     else value = num;
-    }
-    else throw new Error(`optionsMenu error: invalid template type for key ${templateKey}.`);
-    if (options[templateKey] !== value) {
-     options[templateKey] = value;
-     device.tell(`${name} is now ${stringifyOptionValue(value)}.`);
-     if (saveCallback) await saveCallback();
+     else if (type === 'boolean') value = !options[templateKey];
+     else if (type === 'number') {
+      const { min, max } = template[templateKey];
+      const line = await middleware.prompt({
+       message: (message || `Enter a number for the ${name} option:`),
+       abortOnBlank: (abortOnBlank !== false),
+      });
+      const num = parseInt(line || Math.max(0, max || 0));
+      if (isNaN(num)) {
+       device.tell(`That's not a number.`);
+       break;
+      }
+      else if (min !== undefined && num < min) {
+       device.tell(`The number can't be lower than ${min}.`);
+       continue;
+      }
+      else if (max !== undefined && num > max) {
+       device.tell(`The number can't be higher than ${max}.`);
+       continue;
+      }
+      else value = num;
+     }
+     else throw new Error(`optionsMenu error: invalid template type for key ${templateKey}.`);
+     if (options[templateKey] === value) device.tell(`No change.`);
+     else {
+      options[templateKey] = value;
+      device.tell(`${name} is now ${stringifyOptionValue(value)}.`);
+      if (saveCallback) await saveCallback();
+     }
+     break;
     }
    }
    else break;
