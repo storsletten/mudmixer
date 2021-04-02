@@ -137,6 +137,7 @@ module.exports = async (main) => {
  await require('./net/index.js')(main);
  await require('./sessions/index.js')(main);
  await require('./loggers/index.js')(main);
+ await require('./databases/index.js')(main);
 
  // Load custom script.
  await exports.loadCustomScript();

@@ -18,6 +18,7 @@ exports.journal = [];
 exports.listeners = new Map();
 exports.listenersCount = 0;
 exports.log = console.log;
+exports.databases = new Map();
 exports.loggers = new Map();
 exports.sessions = new Map();
 exports.directoryWatchers = new Map();

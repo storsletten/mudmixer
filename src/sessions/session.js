@@ -113,6 +113,7 @@ module.exports = (main) => {
     });
    });
    (async () => {
+    if (serverOptions.db) await server.setDatabase(exports.getDatabase(serverOptions.db));
     if (this.destroyed || server.destroyed) return;
     if (server.middleware) {
      // Loading the default .server middleware only if no custom script has already added middleware packages.

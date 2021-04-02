@@ -11,6 +11,7 @@ module.exports = main => {
    this.maxReadHistoryLength = 50;
    this.maxWriteHistoryLength = 10;
    this.maxIACHistoryLength = 10;
+   this.db = undefined;
    this.readHistory = [];
    this.writeHistory = [];
    this.iacHistory = [];
@@ -26,6 +27,8 @@ module.exports = main => {
    this.events = new exports.utils.Events();
    this.timers = new exports.utils.Timers();
    if (options) this.set(options);
+   this.middleware = undefined;
+   this.session = undefined;
   }
 
   close(reason) {
@@ -72,6 +75,7 @@ module.exports = main => {
    this.bufferedData = options.bufferedData || this.bufferedData || '';
    this.eol = options.eol || this.eol || "\n";
    this.maxLineLength = options.maxLineLength || this.maxLineLength || (5 * 1024 * 1024);
+   if (options.db) this.setDatabase(options.db);
    exports.events.emit('deviceSet', this, options);
   }
   unset() {
@@ -90,6 +94,7 @@ module.exports = main => {
    this.readHistory.length = 0;
    this.writeHistory.length = 0;
    this.iacHistory.length = 0;
+   if (this.db) this.unsetDatabase();
   }
 
   setSocket(socket) {
@@ -216,6 +221,23 @@ module.exports = main => {
    if (!this.middleware) return;
    this.middleware.device = undefined;
    this.middleware = undefined;
+  }
+
+  setDatabase(db) {
+   if (this.db) this.unsetDatabase();
+   if (db.initializing) {
+    return db.initializing.then(val => {
+     if (!this.destroyed) {
+      if (this.db) this.unsetDatabase();
+      db.link(this);
+     }
+     return val;
+    });
+   }
+   else db.link(this);
+  }
+  unsetDatabase() {
+   if (this.db) this.db.unlink(this);
   }
 
   setSession(session) {

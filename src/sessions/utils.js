@@ -18,6 +18,7 @@ module.exports = main => {
   bufferTTL: 250,
   acceptLocalEdit: true,
   ascii: true,
+  db: '',
   middleware: [],
   readLoggers: [''],
   writeLoggers: [],
@@ -26,6 +27,7 @@ module.exports = main => {
  exports.knownHosts = new Map([
   [/(^|\.)toastsoft\.net:\d+$/, {
    name: 'miriani',
+   db: 'miriani',
    middleware: ['miriani'],
    bufferTTL: 0,
    readLoggers: ['miriani'],

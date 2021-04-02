@@ -20,6 +20,10 @@ module.exports = async (main, { force, hard } = {}) => {
 
   if (Array.isArray(exports.config.listeners)) await exports.syncListeners(exports.config.listeners);
 
+  for (let db of exports.databases.values()) {
+   db.update();
+   await db.store();
+  }
   for (let listener of exports.listeners.keys()) listener.update();
   for (let logger of exports.loggers.values()) logger.update();
   for (let session of exports.sessions.values()) session.update();

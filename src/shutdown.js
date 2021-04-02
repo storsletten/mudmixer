@@ -12,5 +12,9 @@ module.exports = async (main, { force } = {}) => {
   for (let device of exports.devices.keys()) device.close();
   for (let session of exports.sessions.values()) session.close();
   for (let logger of exports.loggers.values()) logger.close();
+  for (let db of exports.databases.values()) {
+   await db.store();
+   db.close();
+  }
  }
 };
