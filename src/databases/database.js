@@ -23,7 +23,7 @@ module.exports = main => {
    if (this.destroyed) return;
    this.destroyed = true;
    this.devices.forEach(device => this.unlink(device));
-   if (this.name) this.unsetName();
+   if (this.name) exports.databases.delete(this.name.toLowerCase());
   }
 
   setName(newName) {
@@ -43,7 +43,7 @@ module.exports = main => {
   }
 
   getPath() {
-   return exports.dataPath('databases', `${this.name}.json`);
+   return exports.dataPath('databases', `${this.name.toLowerCase()}.json`);
   }
 
   link(device) {
@@ -87,6 +87,30 @@ module.exports = main => {
    const fileIgnored = watcher && watcher.ignoreFile({ name: baseName });
    try {
     await fs.promises.writeFile(filePath, data, { encoding: 'binary' });
+    exports.log(`Stored database ${this.name || ''} (${exports.utils.formatThousands(data.length)} Bytes written).`);
+    this.lastSnapshot = data;
+    return true;
+   }
+   catch (error) {
+    exports.log(`Couldn't store database ${exports.utils.formatPath(filePath)}.`, error);
+    return false;
+   }
+   finally {
+    if (fileIgnored) watcher.unignoreFile({ name: baseName });
+   }
+  }
+
+  storeSync() {
+   // This method enables process 'exit' event to store data.
+   const filePath = this.getPath();
+   const dirName = path.dirname(filePath);
+   const baseName = path.basename(filePath);
+   const data = JSON.stringify(this.data, null, 1);
+   if (data === this.lastSnapshot) return;
+   const watcher = exports.directoryWatchers.get(dirName);
+   const fileIgnored = watcher && watcher.ignoreFile({ name: baseName });
+   try {
+    fs.writeFileSync(filePath, data, { encoding: 'binary' });
     exports.log(`Stored database ${this.name || ''} (${exports.utils.formatThousands(data.length)} Bytes written).`);
     this.lastSnapshot = data;
     return true;

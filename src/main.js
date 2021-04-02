@@ -25,7 +25,8 @@ exports.directoryWatchers = new Map();
 exports.package = {};
 exports.utils = {};
 
-// Process hooks.
+// Process hooks
+process.on('exit', (...args) => exports.onExit && exports.onExit(...args));
 process.on('uncaughtException', (error, origin) => {
  if (error && error instanceof Error) exports.log(origin || 'Uncaught', error);
 });

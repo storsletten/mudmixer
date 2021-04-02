@@ -44,6 +44,11 @@ module.exports = async (main) => {
   }
  };
 
+ exports.onExit = (code) => {
+  // This function must be synchronous.
+  exports.databases.forEach(db => db.storeSync());
+ };
+
  exports.log(`Loading ${exports.title(true)} from ${exports.utils.formatPath(exports.packagePath)} ...`);
 
  // Command-line arguments.

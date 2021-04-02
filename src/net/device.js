@@ -26,9 +26,9 @@ module.exports = main => {
    this.ignore = new Set();
    this.events = new exports.utils.Events();
    this.timers = new exports.utils.Timers();
-   if (options) this.set(options);
    this.middleware = undefined;
    this.session = undefined;
+   if (options) this.set(options);
   }
 
   close(reason) {

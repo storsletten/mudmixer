@@ -43,6 +43,10 @@ module.exports = (main, middleware) => {
     try {
      await fs.promises.writeFile(dbPath, `{}`, { encoding: 'binary', flag: 'wx' });
      await server.setDatabase(exports.getDatabase(lcNewName));
+     if (server.serverOptions.db !== lcNewName) {
+      server.serverOptions.db = lcNewName;
+      await device.session.save();
+     }
      exports.log(`Created database: ${lcNewName}`);
      device.tell(`Database created and set for ${server.name}.`);
     }
@@ -55,10 +59,18 @@ module.exports = (main, middleware) => {
     const [ menuLabel, stopUsing, lcName, name, dbPath ] = choices[choiceIndex];
     if (stopUsing) {
      server.unsetDatabase();
+     if (server.serverOptions.db) {
+      server.serverOptions.db = '';
+      await device.session.save();
+     }
      device.tell(`Database unset.`);
     }
     else {
      await server.setDatabase(exports.getDatabase(name));
+     if (server.serverOptions.db !== name) {
+      server.serverOptions.db = name;
+      await device.session.save();
+     }
      device.tell(`Database set.`);
     }
    }
