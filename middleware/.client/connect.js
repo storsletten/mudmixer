@@ -2,7 +2,15 @@ module.exports = async (main, middleware) => {
  const exports = main.exports;
  const device = middleware.device;
 
- if (device.session) await require('./mxCommands/index.js')(main, middleware);
+ const loadMore = async () => {
+  require('./mcp.js')(main, middleware);
+  require('./mcpClientInfo.js')(main, middleware);
+  require('./mcpNegotiate.js')(main, middleware);
+  require('./mcpPing.js')(main, middleware);
+  await require('./mxCommands/index.js')(main, middleware);
+ };
+
+ if (device.session) await loadMore();
  else {
   (async () => {
    if (!device.destroyed && !device.session) {
@@ -20,8 +28,11 @@ module.exports = async (main, middleware) => {
      }
     });
     const session = await loginPrompt.promise;
-    // Loading MX commands after a successful login.
-    await require('./mxCommands/index.js')(main, middleware);
+
+    // Loading more stuff after a successful login.
+    await loadMore();
+
+    device.tell(`#$#mcp version: 2.1 to: 2.1`);
     device.tell(`Type MX HELP if you need help.`);
    }
   })();
