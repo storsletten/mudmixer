@@ -43,14 +43,7 @@ module.exports = (main, middleware) => {
     else if (connectedServers.includes(newServer)) device.tell(`You are already transmitting to ${newServer.name || newServer.title()}.`);
     else {
      device.switchServer(newServer);
-     if (device.gagMode === 'focused') {
-      device.getServers(device.pipesFrom).forEach(server => {
-       if (server === newServer) device.ignore.delete(server);
-       else device.ignore.add(server);
-      });
-      device.tell(newServer.name);
-     }
-     else if (device.ignore.has(newServer)) device.tell(`${newServer.name} (gagged)`);
+     if (device.ignore.has(newServer)) device.tell(`${newServer.name} (gagged)`);
      else device.tell(newServer.name);
     }
    }

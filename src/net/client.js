@@ -79,6 +79,12 @@ module.exports = main => {
     this.setReadPipe(server);
     if (server.readLoggers.size > 0) this.currentLoggerName = server.readLoggers.values().next().value.name;
    }
+   if (this.gagMode === 'focused') {
+    this.getServers(this.pipesFrom).forEach(device => {
+     if (device === server) this.ignore.delete(device);
+     else this.ignore.add(device);
+    });
+   }
   }
 
   update() {
