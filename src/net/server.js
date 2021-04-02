@@ -87,6 +87,10 @@ module.exports = main => {
     if (options.loginCommand) {
      this.tellServer(typeof options.loginCommand === 'string' ? options.loginCommand.split(';').map(str => str.trim()) : options.loginCommand);
     }
+    if (this.session && this.serverOptions && this.serverOptions.disabled) {
+     this.serverOptions.disabled = false;
+     this.session.save();
+    }
     return true;
    }).catch(reason => {
     if (this.socket) this.unsetSocket(true);
@@ -102,6 +106,10 @@ module.exports = main => {
    this.connectingTime = undefined;
    this.reconnectingTime = undefined;
    this.unsetSocket(true);
+   if (this.serverOptions && !this.serverOptions.disabled) {
+    this.serverOptions.disabled = true;
+    if (this.session) this.session.save();
+   }
    exports.log(`${this.title()} disconnected.`);
    this.read({ device: this, lines: [`Disconnected ${this.name || this.title()}.`] });
   }
@@ -144,6 +152,10 @@ module.exports = main => {
      if (!this.connectingTime && !this.reconnectingTime) exports.log(`${this.title()} ${ended ? `was disconnected by the server` : `disconnected`}.`);
      if (this.serverOptions && (this.serverOptions.reconnectAggressively || !ended)) this.prepareReconnect();
      this.events.emit(ended ? 'remoteSocketClose' : 'socketClose');
+     if (ended && this.serverOptions && !this.serverOptions.disabled && !this.reconnectingTime && !this.timers.has('reconnecting')) {
+      this.serverOptions.disabled = true;
+      this.session.save();
+     }
     }
    });
   }

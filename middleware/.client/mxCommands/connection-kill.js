@@ -10,12 +10,8 @@ module.exports = (main, middleware) => {
   ],
   action: async function({ device, middleware, argstr }) {
    const server = await middleware.selectServer({ argstr });
-   if (server.serverOptions.disabled === true) device.tell(`${server.name || server.title()} is already disabled.`);
-   else {
-    server.serverOptions.disabled = true;
-    server.disconnect();
-    device.session.save();
-   }
+   if (server.serverOptions.disabled === true) device.tell(`${server.name || server.title()} is already killed.`);
+   else server.disconnect();
   },
  };
 };
