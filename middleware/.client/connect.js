@@ -7,6 +7,7 @@ module.exports = async (main, middleware) => {
   require('./mcpClientInfo.js')(main, middleware);
   require('./mcpNegotiate.js')(main, middleware);
   require('./mcpPing.js')(main, middleware);
+  require('./mcpSimpleEdit.js')(main, middleware);
   await require('./mxCommands/index.js')(main, middleware);
  };
 

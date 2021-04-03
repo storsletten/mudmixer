@@ -8,7 +8,6 @@ module.exports = (main, middleware) => {
 
  middleware.setServerCommand('#$#dns-org-mud-moo-simpleedit-content', ({ device, argstr }) => {
   if (!device.mcp) return;
-  else if (device.serverOptions && !device.serverOptions.acceptLocalEdit) return;
   else if (!argstr.startsWith(device.mcp.authKey)) return;
   else {
    const match = argstr.slice(device.mcp.authKey.length).match(/^ reference: (.+?) name: (.+?) type: (.+?) content(\*?): (.+) _data-tag: (.+)$/);
@@ -31,9 +30,25 @@ module.exports = (main, middleware) => {
      reference, name, type, isMultiline, tag,
      content: (content ? [content] : []),
      time: new Date(),
+     rawReference, rawName, rawType, rawTag,
      callback: () => {
       simpleEdit.sessions.delete(tag);
       if (device.destroyed) return;
+      device.events.emit('mcpSimpleEdit', session);
+      (device.getClients()
+       .filter(client => client.mcp && client.mcp.packages['dns-org-mud-moo-simpleedit'])
+       .forEach(client => {
+        const tag = crypto.randomBytes(3).toString('hex');
+        const lines = [
+         `#$#dns-org-mud-moo-simpleedit-content ${client.mcp.authKey} reference: ${rawReference} name: ${rawName} type: ${rawType} content*: "" _data-tag: ${tag}`,
+         ...session.content.map(line => `#$#* ${tag} content: ${line}`),
+         `#$#: ${tag}`,
+         '',
+        ];
+        client.write({ device, lines, skipMiddleware: true, noForwarding: true });
+       })
+      );
+      if (device.serverOptions && !device.serverOptions.acceptLocalEdit) return;
       const dirName = exports.dataPath('tmp');
       const baseName = `${exports.utils.sanitizeFileName(reference) || 'tmp'}.txt`;
       const filePath = path.join(dirName, baseName);

@@ -10,6 +10,8 @@ module.exports = (main, middleware) => {
    const ctx = device.mcp.mooLocalEdit;
    if (line === '.') {
     // End of content block
+    device.events.emit('mooLocalEdit', ctx);
+    if (device.serverOptions && !device.serverOptions.acceptLocalEdit) return;
     const dirName = exports.dataPath('tmp');
     const baseName = `${exports.utils.sanitizeFileName(ctx.name) || 'tmp'}.txt`;
     const filePath = path.join(dirName, baseName);
@@ -50,7 +52,6 @@ module.exports = (main, middleware) => {
    device.mcp.mooLocalEdit = undefined;
   }
   else if (line.startsWith('#$# edit name: ')) {
-   if (device.serverOptions && !device.serverOptions.acceptLocalEdit) return;
    const match = line.match(/^#\$# edit name: (.+) upload: (.+)$/);
    if (match) {
     const rawFields = match.slice(1, 3);
