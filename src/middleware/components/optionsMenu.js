@@ -50,6 +50,7 @@ module.exports = main => {
      let value;
      if (description && !argstr) device.tell(description);
      if (type === 'string') {
+      if (options[templateKey]) device.tell(`Current value: ${options[templateKey]}`);
       value = await middleware.prompt({
        message: (message || `Enter a value for the ${name} option:`),
        abortOnBlank,
@@ -58,6 +59,7 @@ module.exports = main => {
      else if (type === 'boolean') value = !options[templateKey];
      else if (type === 'number') {
       const { min, max } = template[templateKey];
+      if (options[templateKey] !== undefined) device.tell(`Current value: ${options[templateKey]}`);
       const line = await middleware.prompt({
        message: (message || `Enter a number for the ${name} option:`),
        abortOnBlank: (abortOnBlank !== false),
