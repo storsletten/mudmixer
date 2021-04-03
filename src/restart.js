@@ -29,6 +29,7 @@ module.exports = async (main, { force, hard } = {}) => {
   for (let session of exports.sessions.values()) session.update();
   for (let device of exports.devices.keys()) {
    device.update();
+   device.events.removeAllListeners();
    if (device.middleware) device.middleware.update();
   }
   for (let device of exports.devices.keys()) {
