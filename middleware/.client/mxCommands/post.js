@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[filename]`,
-  commands: ['mxp'],
+  commands: [`${exports.config.mxCommand || 'mx'}p`],
   aliases: ['p'],
   help: [
    `Opens local edit for posting data to a server.`,

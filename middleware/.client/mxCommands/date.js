@@ -4,7 +4,7 @@ module.exports = (main, middleware) => {
  return {
   sessionRequired: false,
   syntax: ``,
-  commands: ['mxd'],
+  commands: [`${exports.config.mxCommand || 'mx'}d`],
   aliases: ['d'],
   help: [
    `Shows your computer's current date.`,

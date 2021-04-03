@@ -4,7 +4,7 @@ module.exports = (main, middleware) => {
  return {
   sessionRequired: false,
   syntax: ``,
-  commands: ['mxq'],
+  commands: [`${exports.config.mxCommand || 'mx'}q`],
   aliases: ['q', 'exit'],
   help: [
    `This command terminates your connection to ${exports.title()}.`,

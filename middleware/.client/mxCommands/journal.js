@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: ``,
-  commands: ['mxj'],
+  commands: [`${exports.config.mxCommand || 'mx'}j`],
   aliases: ['j'],
   help: [
    `Shows the most recent console log messages.`,

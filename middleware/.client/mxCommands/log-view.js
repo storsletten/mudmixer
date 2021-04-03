@@ -6,7 +6,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[date yyyy-mm-dd | number of days ago] [name]`,
-  commands: ['mxl'],
+  commands: [`${exports.config.mxCommand || 'mx'}l`],
   aliases: ['l', 'log', 'lv', 'lview', 'view-log'],
   help: [
    `Opens a log file using local edit.`,

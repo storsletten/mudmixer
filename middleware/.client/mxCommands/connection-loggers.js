@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `name`,
-  commands: ['mxcl'],
+  commands: [`${exports.config.mxCommand || ''}cl`],
   aliases: ['cl', 'cloggers', 'clogging', 'loggers-connection'],
   help: [
    `This command manages connection logging.`,

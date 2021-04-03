@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `name`,
-  commands: ['mxch'],
+  commands: [`${exports.config.mxCommand || ''}ch`],
   aliases: ['ch', 'chistory', 'history-connection'],
   help: [
    `This command shows the most recent messages received from a server.`,

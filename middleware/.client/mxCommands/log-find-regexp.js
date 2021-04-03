@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[search term]`,
-  commands: ['mxfr'],
+  commands: [`${exports.config.mxCommand || 'mx'}fr`],
   aliases: ['fr', 'findregexp', 'find-regexp', 'rf', 'rfind', 'regexpfind'],
   help: [
    `Searches the currently selected log directory for files with contents that match a regular expression.`,

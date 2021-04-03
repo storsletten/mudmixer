@@ -5,7 +5,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[filename]`,
-  commands: ['mxpp'],
+  commands: [`${exports.config.mxCommand || 'mx'}pp`],
   aliases: ['pp', 'ppost'],
   help: [
    `Sends an existing post to the current server without opening local edit.`,

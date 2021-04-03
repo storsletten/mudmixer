@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[expression]`,
-  commands: ['mev', 'meval', 'mxe', 'mxev', 'mxeval'],
+  commands: [`${exports.config.mxCommand || 'mx'}e`, `${exports.config.mxCommand || 'mx'}ev`],
   aliases: ['e'],
   help: [
    `Evaluates the expression as JavaScript code.`,

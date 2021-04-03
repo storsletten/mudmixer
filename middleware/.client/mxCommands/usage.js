@@ -5,6 +5,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: ``,
+  commands: [`${exports.config.mxCommand || 'mx'}us`],
   help: [
    `Shows resource usage information.`,
   ],

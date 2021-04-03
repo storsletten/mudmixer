@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `option`,
-  commands: ['mxco'],
+  commands: [`${exports.config.mxCommand || ''}co`],
   aliases: ['co', 'coptions'],
   help: [
    `This command changes options for an outgoing (server) connection.`,

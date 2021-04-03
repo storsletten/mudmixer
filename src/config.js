@@ -11,6 +11,7 @@ module.exports = async (main) => {
 
  // Default configuration.
  const currentDefaultConfig = {
+  mxCommand: 'mx',
   textEditor: '', // A path to an executable that will be used with local edit.
   maxJournalSize: 50, // The maximum number of entries in exports.journal before it starts removing the oldest entry.
   defaultLogger: {

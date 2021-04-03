@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[text]`,
-  commands: ['mxpass'],
+  commands: [`${exports.config.mxCommand || ''}pass`],
   help: [
    `Sends the text directly to the server(s) that you are currently transmitting to, bypassing all middleware.`,
   ],

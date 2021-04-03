@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[name]`,
-  commands: ['mxg'],
+  commands: [`${exports.config.mxCommand || ''}g`],
   aliases: ['g', 'cg', 'cgag', 'gag-connection'],
   help: [
    `This command toggles gagging of a connection.`,

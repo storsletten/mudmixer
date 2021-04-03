@@ -5,7 +5,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[name]`,
-  commands: ['mxls'],
+  commands: [`${exports.config.mxCommand || 'mx'}ls`],
   aliases: ['ls', 'lswitch', 'switch-log', 'lselect', 'select-log', 'log-select'],
   help: [
    `This command sets the current log directory to use with the other MX log commands.`,

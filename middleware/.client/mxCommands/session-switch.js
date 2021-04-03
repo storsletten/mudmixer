@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `name`,
-  commands: ['mxs'],
+  commands: [`${exports.config.mxCommand || 'mx'}s`],
   aliases: ['s', 'ss', 'switch-session'],
   help: [
    `This command switches your connection to another session.`,

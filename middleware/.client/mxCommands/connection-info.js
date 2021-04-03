@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[name]`,
-  commands: ['mxci'],
+  commands: [`${exports.config.mxCommand || ''}ci`],
   aliases: ['ci', 'cinfo', 'info-connections'],
   help: [
    `This command shows information about a connection.`,

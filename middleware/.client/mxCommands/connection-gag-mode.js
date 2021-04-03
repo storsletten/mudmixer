@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[mode]`,
-  commands: ['mxgm'],
+  commands: [`${exports.config.mxCommand || ''}gm`],
   aliases: ['gm', 'cgm', 'cgagmode', 'gag-mode'],
   help: [
    `This command changes the gag mode of your client connection.`,

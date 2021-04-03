@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[name]`,
-  commands: ['mxcm'],
+  commands: [`${exports.config.mxCommand || ''}cm`],
   aliases: ['cm', 'cmiddleware', 'middleware-connection'],
   help: [
    `This command manages the middleware of a connection.`,

@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `name`,
-  commands: ['mxck'],
+  commands: [`${exports.config.mxCommand || ''}ck`],
   aliases: ['ck', 'ckill', 'kill-connection'],
   help: [
    `This command disconnects an outgoing (server) connection within the current session.`,

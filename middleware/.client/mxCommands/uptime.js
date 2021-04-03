@@ -3,6 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: ``,
+  commands: [`${exports.config.mxCommand || 'mx'}up`],
   help: [
    `Shows uptime information.`,
   ],

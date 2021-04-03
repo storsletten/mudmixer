@@ -33,7 +33,7 @@ module.exports = async (main, middleware) => {
   }
  };
 
- middleware.setCommand('mx', params => {
+ middleware.setCommand(exports.config.mxCommand || 'mx', params => {
   const { device, args } = params;
   const requestedCommand = args.shift() || '';
   const command = resolveCommand(requestedCommand);

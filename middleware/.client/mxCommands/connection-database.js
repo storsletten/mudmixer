@@ -5,7 +5,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `name`,
-  commands: ['mxcd'],
+  commands: [`${exports.config.mxCommand || ''}cd`],
   aliases: ['cd', 'cdatabase', 'database-connection'],
   help: [
    `This command sets which database that the specified connection should use.`,
