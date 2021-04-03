@@ -39,6 +39,9 @@ module.exports = main => {
        }
       }
       else {
+       const announcement = `Failed login attempt by ${device.title()} (${exports.utils.formatIPAddress(device.socket && device.socket.remoteAddress)}).`;
+       exports.log(`Failed login by ${device.title()}. Session does not exist:`, sessionName);
+       exports.devices.forEach((p, d) => (d.session && d.isClient() && d.tell(announcement)));
        if (this.attempts === this.maxAttempts) {
         device.tell(`*** Max login attempts ***`);
         this.reject({ ...args, reason: 'maxLoginAttempts' });
