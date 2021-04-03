@@ -46,10 +46,18 @@ module.exports = main => {
    }
    if (templateKey) {
     while (!device.destroyed) {
-     const { name, type, description, message, abortOnBlank } = template[templateKey];
+     const { name, type, description, message, abortOnBlank, validate } = template[templateKey];
      let value;
      if (description && !argstr) device.tell(description);
-     if (type === 'string') {
+     if (type === 'object') {
+      await exports.optionsMenu({
+       device, middleware, saveCallback,
+       options: options[templateKey],
+       template: template[templateKey].template,
+      });
+      break;
+     }
+     else if (type === 'string') {
       if (options[templateKey]) device.tell(`Current value: ${options[templateKey]}`);
       value = await middleware.prompt({
        message: (message || `Enter a value for the ${name} option:`),
@@ -80,10 +88,18 @@ module.exports = main => {
       else value = num;
      }
      else throw new Error(`optionsMenu error: invalid template type for key ${templateKey}.`);
+     if (typeof validate === 'function') {
+      const result = validate(value);
+      if (result !== undefined && result !== true) {
+       if (typeof result === 'string') device.tell(result);
+       else device.tell(`Invalid input.`);
+       continue;
+      }
+     }
      if (options[templateKey] === value) device.tell(`No change.`);
      else {
       options[templateKey] = value;
-      device.tell(`${name} is now ${stringifyOptionValue(value)}.`);
+      device.tell(`${name} is now ${value === '' ? 'an empty string' : stringifyOptionValue(value)}.`);
       if (saveCallback) await saveCallback();
      }
      break;

@@ -15,6 +15,9 @@ module.exports = (main, middleware) => {
     host: {
      name: 'Host Name',
      type: 'string',
+     validate: value => {
+      if (value.includes(' ')) return `The hostname cannot contain spaces.`;
+     },
     },
     port: {
      name: 'Port Number',
