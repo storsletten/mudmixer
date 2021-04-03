@@ -33,6 +33,9 @@ module.exports = async (main, middleware) => {
     // Loading more stuff after a successful login.
     await loadMore();
 
+    // Register soundpack (if any).
+    if (device.soundpack) device.getActiveServers().forEach(server => server.tellServer(`#$#register_soundpack ${device.soundpack.name} | ${device.soundpack.version}`));
+
     device.tell(`#$#mcp version: 2.1 to: 2.1`);
     device.tell(`Type MX HELP if you need help.`);
    }
