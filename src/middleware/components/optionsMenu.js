@@ -5,7 +5,7 @@ module.exports = main => {
   if (typeof val === 'boolean') return val ? 'On' : 'Off';
   else if (typeof val === 'number') return val.toString();
   else if (typeof val === 'string') {
-   if (val.length > 75) return `... ${val.slice(-71)}`;
+   if (val.length > 75) return `${val.slice(0, 71)} ...`;
    else return val;
   }
  };
