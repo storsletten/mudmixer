@@ -383,7 +383,7 @@ module.exports = main => {
 
   stringifyObjects(objects) {
    if (objects.length === 0) return [''];
-   else return objects.map(object => exports.utils.stringify(object).split(/(\r\n|\r|\n)/)).flat();
+   else return objects.map(object => exports.utils.stringify(object)).join(' ').split(/(\r\n|\r|\n)/);
   }
 
   isActive() { return Boolean(this.socket && !this.socket.destroyed && !this.connectingTime && !this.reconnectingTime); }
