@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
  const device = middleware.device;
 
  device.events.on('remoteSocketClose', () => {
-  if (device.readHistory.length > 1 && device.serverOptions && device.serverOptions.reconnect && !device.serverOptions.reconnectAggressively) {
+  if (device.readHistory.length > 1 && device.config.reconnect && !device.config.reconnectAggressively) {
    for (let i = Math.max(0, device.readHistory.length - 3); i < device.readHistory.length; i++) {
     const line = device.readHistory[i].line;
     if (line.startsWith('*** Server shutdown') || line.startsWith('*** Shutting down')) {

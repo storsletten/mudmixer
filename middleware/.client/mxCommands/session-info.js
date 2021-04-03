@@ -29,7 +29,7 @@ module.exports = (main, middleware) => {
       const header = ['Name', 'Host', 'Port'];
       const rows = [];
       for (let [lcName, server] of session.servers) {
-       const { host, port, tls } = server.serverOptions;
+       const { host, port, tls } = server.config;
        rows.push([server.name, host, (tls ? 'TLS' : '') + String(port)]);
       }
       device.tell(exports.utils.padTableColumns([header, ...rows.sort((a, b) => a[0] > b[0])]).map(row => row.join(' ')));

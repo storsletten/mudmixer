@@ -13,6 +13,7 @@ module.exports = (main) => {
      textEditor: '',
      defaultLogger: {},
     },
+    clients: [],
     servers: [],
    };
    this.clients = new Set();
@@ -59,7 +60,7 @@ module.exports = (main) => {
   activate() {
    this.active = true;
    this.servers.forEach(device => {
-    if (!device.socket && !device.serverOptions.disabled && !device.disconnectedTime && !device.connectingTime && !device.reconnectingTime) device.createSocket();
+    if (!device.socket && !device.config.disabled && !device.disconnectedTime && !device.connectingTime && !device.reconnectingTime) device.createSocket();
    });
   }
   deactivate(force) {
@@ -104,7 +105,7 @@ module.exports = (main) => {
    const server = new exports.Server({
     session: this,
     name: serverOptions.name,
-    serverOptions,
+    config: serverOptions,
     middleware: new exports.Middleware(),
    });
    ['readLoggers', 'writeLoggers'].forEach(prop => {

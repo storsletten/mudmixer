@@ -10,7 +10,7 @@ module.exports = main => {
    super(options);
    if (options) {
     exports.log(`${this.title()}${this.name ? ` (named ${this.name})` : ''} created${this.session ? ` for ${this.session.title()}` : ''}.`);
-    if (options.connect) this.createSocket(exports.utils.isRegularObject(options.connect) ? options.connect : this.serverOptions);
+    if (options.connect) this.createSocket(exports.utils.isRegularObject(options.connect) ? options.connect : this.config);
    }
   }
 
@@ -26,9 +26,9 @@ module.exports = main => {
      if (this.session.servers.get(lcOldName) === this) {
       this.session.servers.delete(lcOldName);
       this.session.servers.set(lcNewName, this);
-      const serverOptions = this.session.data.servers.find(serverOptions => serverOptions.name === oldName);
-      if (serverOptions) {
-       serverOptions.name = newName;
+      const config = this.session.data.servers.find(config => config.name === oldName);
+      if (config) {
+       config.name = newName;
        promise = this.session.save();
       }
      }
@@ -42,23 +42,18 @@ module.exports = main => {
   isClient() { return false; }
 
   set(options = {}) {
-   if (options.serverOptions) this.serverOptions = options.serverOptions;
    if (options.name) this.setName(options.name);
    this.id = options.id || this.id || (++exports.serversCount);
    super.set(options);
    exports.events.emit('serverSet', this, options);
   }
-  unset() {
-   super.unset();
-   if (this.serverOptions) this.serverOptions = undefined;
-  }
 
-  createSocket(options = this.serverOptions) {
+  createSocket(options = this.config) {
    if (this.socket) throw new Error(`${this.title()} has already a socket.`);
    else if (this.listener) throw new Error(`${this.title()} cannot create an outgoing socket because it has a listener.`);
    else if (this.connectingTime) throw new Error(`${this.title()} is already connecting.`);
    else if (!options) throw new Error(`${this.title()} can't create a socket without any options.`);
-   if (this.serverOptions !== options) this.serverOptions = options;
+   if (this.config !== options) this.setConfig(options);
    this.disconnectedTime = undefined;
    this.connectingTime = new Date();
    this.timers.delete('reconnecting');
@@ -68,8 +63,8 @@ module.exports = main => {
     this.read({ device: this, lines: [`Connecting to ${this.name || this.title()} ...`] });
    }
    const socket = (isTLS
-    ? tls.connect({ rejectUnauthorized: false, ...options })
-    : net.createConnection(options)
+    ? tls.connect({ rejectUnauthorized: false, host: options.host, port: options.port })
+    : net.createConnection({ host: options.host, port: options.port })
    );
    const events = new exports.utils.Events(socket);
    this.setSocket(socket);
@@ -87,8 +82,8 @@ module.exports = main => {
     if (options.loginCommand) {
      this.tellServer(typeof options.loginCommand === 'string' ? options.loginCommand.split(';').map(str => str.trim()) : options.loginCommand);
     }
-    if (this.session && this.serverOptions && this.serverOptions.disabled) {
-     this.serverOptions.disabled = false;
+    if (this.session && this.config.disabled) {
+     this.config.disabled = false;
      this.session.save();
     }
     return true;
@@ -106,8 +101,8 @@ module.exports = main => {
    this.connectingTime = undefined;
    this.reconnectingTime = undefined;
    this.unsetSocket(true);
-   if (this.serverOptions && !this.serverOptions.disabled) {
-    this.serverOptions.disabled = true;
+   if (!this.config.disabled) {
+    this.config.disabled = true;
     if (this.session) this.session.save();
    }
    exports.log(`${this.title()} disconnected.`);
@@ -116,20 +111,17 @@ module.exports = main => {
 
   prepareReconnect(delay) {
    if (this.destroyed) return;
-   else if (!this.serverOptions) throw new Error(`${this.title()} has no serverOptions to use for reconnecting.`);
    else if (this.connectingTime) throw new Error(`${this.title()} is already connecting.`);
-   else if (this.serverOptions.reconnect !== false && (!this.session || this.session.active)) {
-    this.timers.setTimeout('reconnecting', delay || this.serverOptions.reconnectInterval || 3000, () => this.reconnect());
+   else if (this.config.reconnect !== false && (!this.session || this.session.active)) {
+    this.timers.setTimeout('reconnecting', delay || this.config.reconnectInterval || 3000, () => this.reconnect());
    }
   }
   reconnect() {
-   if (!this.serverOptions) throw new Error(`${this.title()} has no serverOptions to use for reconnecting.`);
-   else if (this.listener) throw new Error(`${this.title()} can't reconnect to a listener.`);
-   else if (this.connectingTime) throw new Error(`${this.title()} is already connecting.`);
+   if (this.connectingTime) throw new Error(`${this.title()} is already connecting.`);
    this.timers.delete('reconnecting');
    if (!this.reconnectingTime) {
     this.reconnectingTime = new Date();
-    exports.log(`${this.title()} reconnecting ${this.serverOptions.tls ? 'securely ' : ''}to ${this.serverOptions.host} on port ${this.serverOptions.port}.`);
+    exports.log(`${this.title()} reconnecting ${this.config.tls ? 'securely ' : ''}to ${this.config.host} on port ${this.config.port}.`);
     this.read({ device: this, lines: [`Reconnecting to ${this.name || this.title()} ...`] });
    }
    this.unsetSocket(true);
@@ -150,10 +142,10 @@ module.exports = main => {
     if (!this.session) this.close(ended ? 'socketEnd' : 'socketClose');
     else {
      if (!this.connectingTime && !this.reconnectingTime) exports.log(`${this.title()} ${ended ? `was disconnected by the server` : `disconnected`}.`);
-     if (this.serverOptions && (this.serverOptions.reconnectAggressively || !ended)) this.prepareReconnect();
+     if (this.config.reconnectAggressively || !ended) this.prepareReconnect();
      this.events.emit(ended ? 'remoteSocketClose' : 'socketClose');
-     if (ended && this.serverOptions && !this.serverOptions.disabled && !this.reconnectingTime && !this.timers.has('reconnecting')) {
-      this.serverOptions.disabled = true;
+     if (ended && !this.config.disabled && !this.reconnectingTime && !this.timers.has('reconnecting')) {
+      this.config.disabled = true;
       this.session.save();
      }
     }

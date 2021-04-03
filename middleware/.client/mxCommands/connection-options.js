@@ -76,7 +76,7 @@ module.exports = (main, middleware) => {
     device,
     template,
     argstr,
-    options: server.serverOptions,
+    options: server.config,
     saveCallback: session.save.bind(session),
    });
   },

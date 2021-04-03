@@ -8,9 +8,17 @@ module.exports = main => {
   constructor(options) {
    this.creationTime = new Date();
    this.destroyed = false;
-   this.maxReadHistoryLength = 50;
-   this.maxWriteHistoryLength = 10;
-   this.maxIACHistoryLength = 10;
+   this.config = {
+    eol: "\n",
+    bufferTTL: 0,
+    maxReadHistoryLength: 50,
+    maxWriteHistoryLength: 10,
+    maxIACHistoryLength: 10,
+    db: '',
+    middleware: [],
+    readLoggers: [],
+    writeLoggers: [],
+   };
    this.db = undefined;
    this.readHistory = [];
    this.writeHistory = [];
@@ -60,6 +68,7 @@ module.exports = main => {
 
   set(options = {}) {
    exports.devices.set(this, this.pipesFrom);
+   if (options.config) this.setConfig(options.config);
    if (options.socket) {
     this.setSocket(options.socket);
     this.events.emitBinaryState('ready');
@@ -73,7 +82,6 @@ module.exports = main => {
    if (options.session) this.setSession(options.session);
    if (this.events.destroyed) this.events = new exports.utils.Events();
    this.bufferedData = options.bufferedData || this.bufferedData || '';
-   this.eol = options.eol || this.eol || "\n";
    this.maxLineLength = options.maxLineLength || this.maxLineLength || (5 * 1024 * 1024);
    if (options.db) this.setDatabase(options.db);
    exports.events.emit('deviceSet', this, options);
@@ -95,6 +103,16 @@ module.exports = main => {
    this.writeHistory.length = 0;
    this.iacHistory.length = 0;
    if (this.db) this.unsetDatabase();
+   this.unsetConfig();
+  }
+
+  setConfig(newConfig) {
+   const oldConfig = this.config;
+   exports.utils.mergeRegularObject(newConfig, oldConfig, { overwrite: false });
+   this.config = newConfig;
+  }
+  unsetConfig() {
+   this.config = {};
   }
 
   setSocket(socket) {
@@ -132,10 +150,10 @@ module.exports = main => {
      );
     if (this.bufferedData.length > backtrack) data[0] = `${this.bufferedData.slice(0, -backtrack)}${data[0]}`;
     this.bufferedData = data[data.length - 1];
-    if (this.serverOptions && this.serverOptions.bufferTTL > 0) {
+    if (this.config.bufferTTL > 0) {
      // Using bufferTTL (time to live) to determine how long to wait before flushing the buffer if no end of line/record has been received.
      if (this.bufferedData && !this.bufferedData.startsWith('#$#')) {
-      this.timers.setTimeout('bufferFlush', this.serverOptions.bufferTTL, () => {
+      this.timers.setTimeout('bufferFlush', this.config.bufferTTL, () => {
        if (this.bufferedData && this.socketEvents) this.socketEvents.emit('data', "\n");
       });
      }
@@ -275,8 +293,8 @@ module.exports = main => {
     time: new Date(),
     action: '',
    };
-   if (this.maxIACHistoryLength > 0) {
-    const historyOverflow = this.iacHistory.push(record) - this.maxIACHistoryLength;
+   if (this.config.maxIACHistoryLength > 0) {
+    const historyOverflow = this.iacHistory.push(record) - this.config.maxIACHistoryLength;
     if (historyOverflow > 0) this.iacHistory.splice(0, historyOverflow);
    }
    if (iac.length === 3 && iac[0] === "\xff") {
@@ -316,7 +334,7 @@ module.exports = main => {
     const time = new Date();
     const options = { noForwarding };
     const lines = (this.middleware && !skipMiddleware) ? this.middleware.action({ device, line, options, triggers: this.middleware[this.isClient() ? 'clientTriggers' : 'serverTriggers'] }).lines : [line];
-    if (device !== this && this.socket && this.isClient()) lines.forEach(line => this.socket.write(`${line}${this.eol}`, 'binary'));
+    if (device !== this && this.socket && this.isClient()) lines.forEach(line => this.socket.write(`${line}${this.config.eol}`, 'binary'));
     if (options.executed === undefined && this.isClient() && !line.startsWith('#$#') && !this.hasActiveServers()) {
      if (!this.session) device.tell(`Please use the CONNECT command to log in to a session.`);
      else if (this.session.servers.size === 0) device.tell(`This session has no server connections added. Please see MX HELP CA for information about how to add a connection.`);
@@ -328,8 +346,8 @@ module.exports = main => {
      }
     }
     if (!options.noForwarding) this.readPipes.forEach(d => d.pipe({ device, line, lines, options, operation: 'read' }));
-    if (this.maxReadHistoryLength > 0) {
-     const historyOverflow = this.readHistory.push({ device, line, lines, options, time }) - this.maxReadHistoryLength;
+    if (this.config.maxReadHistoryLength > 0) {
+     const historyOverflow = this.readHistory.push({ device, line, lines, options, time }) - this.config.maxReadHistoryLength;
      if (historyOverflow > 0) this.readHistory.splice(0, historyOverflow);
     }
     else if (this.readHistory.length > 0) this.readHistory.length = 0;
@@ -365,12 +383,11 @@ module.exports = main => {
      : [line]
     );
     if (this.socket && (!options.clientsOnly || this.isClient())) {
-     const ascii = this.serverOptions && this.serverOptions.ascii;
-     lines.forEach(line => this.socket.write(`${ascii ? exports.utils.unidecode(line) : line}${this.eol}`, 'binary'));
+     lines.forEach(line => this.socket.write(`${this.config.ascii ? exports.utils.unidecode(line) : line}${this.config.eol}`, 'binary'));
     }
     if (!options.noForwarding) this.writePipes.forEach(d => d.pipe({ device, line, lines, options, operation: 'write' }));
-    if (this.maxWriteHistoryLength > 0) {
-     const historyOverflow = this.writeHistory.push({ device, line, lines, options, time }) - this.maxWriteHistoryLength;
+    if (this.config.maxWriteHistoryLength > 0) {
+     const historyOverflow = this.writeHistory.push({ device, line, lines, options, time }) - this.config.maxWriteHistoryLength;
      if (historyOverflow > 0) this.writeHistory.splice(0, historyOverflow);
     }
     else if (this.writeHistory.length > 0) this.writeHistory.length = 0;
@@ -427,12 +444,7 @@ module.exports = main => {
   }
 
   update() {
-   // History buffers added on 2021-03-27.
-   if (!this.iacHistory) this.iacHistory = [];
-   if (!this.readHistory) this.readHistory = [];
-   if (!this.writeHistory) this.writeHistory = [];
-   // telnetOptions added on 2021-03-28
-   if (!this.telnetOptions) this.telnetOptions = {};
+   return;
   }
  }
 

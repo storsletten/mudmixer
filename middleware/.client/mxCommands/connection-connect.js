@@ -10,8 +10,8 @@ module.exports = (main, middleware) => {
   ],
   action: async function({ device, middleware, argstr }) {
    const server = await middleware.selectServer({ argstr });
-   if (server.serverOptions.disabled) {
-    server.serverOptions.disabled = false;
+   if (server.config.disabled) {
+    server.config.disabled = false;
     device.session.save();
    }
    server.reconnect();

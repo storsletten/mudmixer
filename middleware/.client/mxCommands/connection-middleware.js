@@ -37,12 +37,13 @@ module.exports = (main, middleware) => {
       else connection.middleware.unloadPackage(packageName);
       if (device === connection) device.tell(`${enable ? 'Enabled' : 'Disabled'} ${packageName}.`);
       else {
-       if (connection.serverOptions && connection.serverOptions.middleware.includes(packageName) !== enable) {
-        if (enable) connection.serverOptions.middleware.push(packageName);
+       if (!connection.config.middleware) connection.config.middleware = [];
+       if (connection.config.middleware.includes(packageName) !== enable) {
+        if (enable) connection.config.middleware.push(packageName);
         else {
-         const index = connection.serverOptions.indexOf(packageName);
+         const index = connection.config.indexOf(packageName);
          // There is no reason why index is -1 here (since we checked with .includes above), but better safe than sorry.
-         if (index !== -1) connection.serverOptions.middleware.splice(index, 1);
+         if (index !== -1) connection.config.middleware.splice(index, 1);
         }
         if (connection.session) await connection.session.save();
        }

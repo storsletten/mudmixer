@@ -11,7 +11,7 @@ module.exports = (main, middleware) => {
    if (line === '.') {
     // End of content block
     device.events.emit('mooLocalEdit', ctx);
-    if (device.serverOptions && !device.serverOptions.acceptLocalEdit) return;
+    if (!device.config.acceptLocalEdit) return;
     const dirName = exports.dataPath('tmp');
     const baseName = `${exports.utils.sanitizeFileName(ctx.name) || 'tmp'}.txt`;
     const filePath = path.join(dirName, baseName);

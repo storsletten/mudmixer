@@ -4,7 +4,7 @@ module.exports = async (main, middleware) => {
  if (device.isClient()) throw new Error(`This middleware is designed for server connections only.`);
 
  // Miriani always sends proper EOL, so no need for buffer TTL.
- if (device.serverOptions) device.serverOptions.bufferTTL = 0;
+ device.config.bufferTTL = 0;
 
  require('./reconnecting.js')(main, middleware);
  require('./registerSoundpack.js')(main, middleware);

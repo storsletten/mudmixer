@@ -48,7 +48,7 @@ module.exports = (main, middleware) => {
         client.write({ device, lines, skipMiddleware: true, noForwarding: true });
        })
       );
-      if (device.serverOptions && !device.serverOptions.acceptLocalEdit) return;
+      if (!device.config.acceptLocalEdit) return;
       const dirName = exports.dataPath('tmp');
       const baseName = `${exports.utils.sanitizeFileName(reference) || 'tmp'}.txt`;
       const filePath = path.join(dirName, baseName);

@@ -13,8 +13,8 @@ module.exports = (main, middleware) => {
    if (session.servers.size === 0) return device.tell(`This session has no servers to kill.`);
    const killedServers = [];
    session.servers.forEach(server => {
-    if (server.serverOptions.disabled !== true) {
-     server.serverOptions.disabled = true;
+    if (server.config.disabled !== true) {
+     server.config.disabled = true;
      server.disconnect();
      killedServers.push(server);
     }

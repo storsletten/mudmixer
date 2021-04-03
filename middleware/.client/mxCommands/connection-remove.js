@@ -15,7 +15,7 @@ module.exports = (main, middleware) => {
     noMessage: `Not removing it.`,
    });
    const serverName = server.name || server.title();
-   device.session.removeServer(server.serverOptions);
+   device.session.removeServer(server.config);
    device.tell(`Removed ${serverName}.`);
    device.session.save();
   },

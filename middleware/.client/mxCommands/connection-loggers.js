@@ -10,7 +10,7 @@ module.exports = (main, middleware) => {
   ],
   action: async function({ device, middleware, argstr }) {
    const server = await middleware.selectServer({ argstr });
-   const serverOptions = server.serverOptions;
+   const serverOptions = server.config;
    (async () => {
     while (!device.destroyed) {
      const choices = [
