@@ -25,8 +25,9 @@ module.exports = main => {
    this.iacHistory = [];
    this.iacSubNegotiation = undefined;
    this.telnetOptions = {
-    eor: false,
-    gmcp: false,
+    eor: false, // End of Record
+    gmcp: false, // Generic MUD Communication Protocol
+    mssp: false, // MUD Server Status Protocol
    };
    this.pipesFrom = new Set();
    this.readPipes = new Set();
@@ -262,7 +263,7 @@ module.exports = main => {
    // 2. Filter low non-printables except ESC (27), LF (10), CR (13), and HT (9). We need ESC for ANSI sequences.
    // 3. Split data into lines regardless of EOL format, even invalid \n\r which apparently some awful clients use.
    // (data MUST be binary encoded String)
-   data = data.replace(/\xff(?:[\xf1-\xf9]|\xfa.+?(?:\xff\xf0|$)|[\xfb-\xfe].)/gs, iac => (this.iacHandle(iac) || ''))
+   data = data.replace(/\xff(?:[\xf1-\xf9\xff]|\xfa.+?(?:\xff\xf0|$)|[\xfb-\xfe].)/gs, iac => (this.iacHandle(iac) || ''))
     .replace(/[^\n\r\t\x1b\x20-\xff]/g, '')
     .split(
      this.telnetOptions.eor ? (
@@ -290,15 +291,21 @@ module.exports = main => {
    }
   }
 
+  iacSend(iac) {
+   const record = {
+    sent: iac,
+    time: new Date(),
+   };
+   if (this.config.maxIACHistoryLength > 0) {
+    const historyOverflow = this.iacHistory.push(record) - this.config.maxIACHistoryLength;
+    if (historyOverflow > 0) this.iacHistory.splice(0, historyOverflow);
+   }
+   if (this.socket) this.socket.write(iac, 'binary');
+  }
+
   iacHandle(iac) {
    // Telnet Protocol, RFC 854:
    // https://tools.ietf.org/html/rfc854
-
-   // Dec Hex Name
-   // 251 FB  WILL
-   // 252 FC  WONT
-   // 253 FD  DO
-   // 254 FE  DONT
 
    if (this.iacSubNegotiation) {
     const record = this.iacSubNegotiation;
@@ -316,12 +323,15 @@ module.exports = main => {
     }
    }
    else if (iac.length > 1 && iac[0] === "\xff") {
+    if (iac === "\xff\xff") {
+     // Interpret as command.
+     return "\xff\xff";
+    }
     const record = {
+     action: '',
      received: iac,
-     sent: '',
      replaced: '',
      time: new Date(),
-     action: '',
     };
     if (this.config.maxIACHistoryLength > 0) {
      const historyOverflow = this.iacHistory.push(record) - this.config.maxIACHistoryLength;
@@ -351,16 +361,32 @@ module.exports = main => {
       record.action = 'accept';
       this.telnetOptions.eor = true;
      }
+     else if (iac === "\xff\xfb\x46") {
+      // IAC WILL MSSP
+      // 255 251  70
+      record.action = 'accept';
+      this.telnetOptions.mssp = true;
+     }
+     else if (iac === "\xff\xfd\x46" && this.isClient() && this.session) {
+      // IAC DO  MSSP
+      // 255 253 70
+      this.telnetOptions.mssp = true;
+     }
      else if (iac === "\xff\xfb\xc9") {
       // IAC WILL GMCP
       // 255 251  201
       record.action = 'accept';
       this.telnetOptions.gmcp = true;
      }
+     else if (iac === "\xff\xfd\xc9" && this.isClient() && this.session) {
+      // IAC DO  GMCP
+      // 255 253 201
+      this.telnetOptions.gmcp = true;
+     }
      else record.action = 'reject';
-     if (record.action && this.socket) {
-      if (record.action === 'reject') this.socket.write(record.sent = `\xff${iac[1] === "\xfb" ? "\xfe" : "\xfc"}${iac[2]}`, 'binary');
-      else if (record.action === 'accept') this.socket.write(record.sent = `\xff${iac[1] === "\xfb" ? "\xfd" : "\xfb"}${iac[2]}`, 'binary');
+     if (record.action) {
+      if (record.action === 'reject') this.iacSend(`\xff${iac[1] === "\xfb" ? "\xfe" : "\xfc"}${iac[2]}`);
+      else if (record.action === 'accept') this.iacSend(`\xff${iac[1] === "\xfb" ? "\xfd" : "\xfb"}${iac[2]}`);
      }
     }
     else if (iac[1] === "\xfc" || iac[1] === "\xfe") {
@@ -380,6 +406,17 @@ module.exports = main => {
   }
 
   iacSubNegotiationHandle(record) {
+   const { received } = record;
+   const data = received.slice(3, -2);
+   if (received[2] === "\x46") {
+    // MSSP
+    this.mssp = data.split("\x01").slice(1).reduce((mssp, data) => {
+     const [ name, value ] = data.split("\x02");
+     if (value.match(/^\d{1,11}(?:\.\d{1,11})?$/)) mssp[name] = Number(value);
+     else mssp[name] = value;
+     return mssp;
+    }, {});
+   }
    return;
   }
 
