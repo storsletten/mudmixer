@@ -35,9 +35,10 @@ module.exports = (main, middleware) => {
    });
    const _aDummyFunctionWithSuperLongAndUniquelyStupidNameOhYeah = () => {
     // Curious about the purpose of the dummy function? See the catch block below.
-    try { device.tell(exports.utils.stringify(eval(argstr), { depth: 1, indent: 1, details: true })); }
+    let result;
+    try { result = eval(argstr); }
     catch (error) {
-     device.tell(error.stack
+     return device.tell(error.stack
       // First trunkating error.stack from where the dummy function is called.
       .replace(/\n[^_\n]+_aDummyFunctionWithSuperLongAndUniquelyStupidNameOhYeah .+/s, '')
       // Then removing any references to the dummy function (in case the user created functions with this eval or previous evals).
@@ -46,6 +47,7 @@ module.exports = (main, middleware) => {
       .split("\n")
      );
     }
+    device.tell(exports.utils.stringify(result, { depth: ((Array.isArray(result) || result instanceof Set) ? 2 : 1), indent: 1, details: true }));
    };
    _aDummyFunctionWithSuperLongAndUniquelyStupidNameOhYeah();
   },
