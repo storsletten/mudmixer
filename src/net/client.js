@@ -5,7 +5,9 @@ module.exports = main => {
  class Client extends Device {
   constructor(options) {
    super(options);
-   this.gagMode = 'hybrid';
+   exports.utils.mergeRegularObject(this.config, {
+    gagMode: 'hybrid',
+   }, { overwrite: false });
   }
 
   title() {
@@ -79,7 +81,7 @@ module.exports = main => {
     this.setReadPipe(server);
     if (server.readLoggers.size > 0) this.currentLoggerName = server.readLoggers.values().next().value.name;
    }
-   if (this.gagMode === 'focused') {
+   if (this.config.gagMode === 'focused') {
     this.getServers(this.pipesFrom).forEach(device => {
      if (device === server) this.ignore.delete(device);
      else this.ignore.add(device);
@@ -90,8 +92,6 @@ module.exports = main => {
   update() {
    super.update();
    exports.utils.changePrototypeOf(this, exports.Client.prototype, { depth: 2 });
-   // Added gagMode on 2021-03-30
-   if (!this.gagMode) this.gagMode = 'hybrid';
   }
  }
 

@@ -21,8 +21,8 @@ module.exports = (main, middleware) => {
     const mode = modes.find(mode => mode.startsWith(lcArgstr));
     if (!mode) device.tell(`Valid gag modes are ${exports.utils.englishList(modes)}.`);
     else {
-     device.gagMode = mode;
-     device.tell(exports.utils.titlify(device.gagMode));
+     device.config.gagMode = mode;
+     device.tell(exports.utils.titlify(device.config.gagMode));
      if (mode === 'focused') {
       const servers = device.getServers(device.pipesFrom).filter(server => device.ignore.has(server) === false && device.readPipes.has(server) === false);
       if (servers.length > 0) {
@@ -33,7 +33,7 @@ module.exports = (main, middleware) => {
     }
    }
    else {
-    device.tell(`Currently in ${device.gagMode} mode.`);
+    device.tell(`Currently in ${device.config.gagMode} mode.`);
     device.tell(`Valid gag modes are ${exports.utils.englishList(modes)}.`);
    }
   },

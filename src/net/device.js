@@ -438,7 +438,7 @@ module.exports = main => {
 
   pipe({ device, line, lines, operation, options }) {
    if (lines.length > 0) {
-    if (this.ignore.has(device) && (this.gagMode !== 'hybrid' || !this.readPipes.has(device))) return;
+    if (this.ignore.has(device) && (this.config.gagMode !== 'hybrid' || !this.readPipes.has(device))) return;
     if (options.clientsOnly !== true || this.isClient()) this.write({ device, lines, skipMiddleware: operation === 'write' });
    }
   }
