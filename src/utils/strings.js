@@ -144,7 +144,12 @@ module.exports = main => {
  const stringify = (val, { depth = 1, indent = 0, details = false } = {}) => {
   if (val === undefined) return 'undefined';
   else if (val === null) return 'null';
-  else if (typeof val === 'string') return details ? JSON.stringify(val) : val;
+  else if (typeof val === 'string') {
+   return (details
+    ? JSON.stringify(val).replace(/[\x00-\x1f\x80-\xff]/g, c => `\\x${c.charCodeAt(0).toString(16)}`)
+    : val
+   );
+  }
   else if (typeof val === 'number') return val.toString();
   else if (typeof val === 'boolean') return val.toString();
   else if (typeof val === 'function') {
