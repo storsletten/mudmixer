@@ -3,7 +3,7 @@ module.exports = (main, middleware) => {
 
  return {
   syntax: `[name] [command]`,
-  commands: [`${exports.config.mxCommand || 'mx'}c`],
+  commands: [`${exports.config.mxCommand || 'mx'}c`, `${exports.config.mxCommand || 'mx'}cs`],
   aliases: ['c', 'cs', 'cswitch', 'switch-connection'],
   help: [
    `This command switches your focus to the specified outgoing (server) connection within the current session.`,

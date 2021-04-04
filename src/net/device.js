@@ -23,8 +23,10 @@ module.exports = main => {
    this.readHistory = [];
    this.writeHistory = [];
    this.iacHistory = [];
+   this.iacSubNegotiation = undefined;
    this.telnetOptions = {
     eor: false,
+    gmcp: false,
    };
    this.pipesFrom = new Set();
    this.readPipes = new Set();
@@ -128,43 +130,7 @@ module.exports = main => {
    // Using binary (latin1) encoding to preserve all Bytes while also allowing String and RegExp operations.
    this.socket.setEncoding('binary');
    this.socket.setKeepAlive(true, 15000);
-   this.socketEvents.on('data', data => {
-    const backtrack = Math.min(2, this.bufferedData.length);
-    // Backtrack determines how many characters from the end of bufferedData to include in text processing.
-    // It should be one less than the largest sequence that may be encountered (e.g. IAC sequence is 3 Bytes so backtracking 2 Bytes will suffice).
-    // This is to avoid performing text processing on buffered data that has already been processed once.
-    if (backtrack > 0) data = `${this.bufferedData.slice(-backtrack)}${data}`;
-    // Text processing:
-    // 1. Handle IAC.
-    // 2. Filter low non-printables except ESC (27), LF (10), CR (13), and HT (9). We need ESC for ANSI sequences.
-    // 3. Split data into lines regardless of EOL format, even invalid \n\r which apparently some awful clients use.
-    // (data MUST be binary encoded String)
-    data = data.replace(/\xff[\xf0-\xff]./gs, iac => (this.iacHandle(iac) || ''))
-     .replace(/[^\n\r\t\x1b\x20-\xff]/g, '')
-     .split(
-      this.telnetOptions.eor ? (
-       /(?:\r\n|\n\r|\r|\n|\xff\xef)/
-      ) : (
-       /(?:\r\n|\n\r|\r|\n)/
-      )
-     );
-    if (this.bufferedData.length > backtrack) data[0] = `${this.bufferedData.slice(0, -backtrack)}${data[0]}`;
-    this.bufferedData = data[data.length - 1];
-    if (this.config.bufferTTL > 0) {
-     // Using bufferTTL (time to live) to determine how long to wait before flushing the buffer if no end of line/record has been received.
-     if (this.bufferedData && !this.bufferedData.startsWith('#$#')) {
-      this.timers.setTimeout('bufferFlush', this.config.bufferTTL, () => {
-       if (this.bufferedData && this.socketEvents) this.socketEvents.emit('data', "\n");
-      });
-     }
-     else this.timers.delete('bufferFlush');
-    }
-    if (data.length > 1) this.read({ device: this, lines: data.slice(0, -1) });
-    else if (this.bufferedData.length > this.maxLineLength) {
-     exports.log(`${this.title()} exceeded the max line length of ${this.maxLineLength} characters.`);
-     this.close('Max line length exceeded');
-    }
-   });
+   this.socketEvents.on('data', data => this.dataHandle(data));
   }
   unsetSocket(destroy = false) {
    // This method does not destroy the socket itself unless the first argument is true.
@@ -277,6 +243,53 @@ module.exports = main => {
    this.session = undefined;
   }
 
+  dataHandle(data) {
+   if (this.iacSubNegotiation) {
+    if (data[0] === "\xf0" && this.iacSubNegotiation.received.endsWith("\xff")) {
+     // Then the IAC SE command itself was fragmented.
+     data = data.replace(/^\xf0/s, iac => (this.iacHandle(iac) || ''));
+    }
+    else data = data.replace(/^.*?\xff\xf0/s, iac => (this.iacHandle(iac) || ''));
+    if (!data) return;
+   }
+   const backtrack = Math.min(2, this.bufferedData.length);
+   // Backtrack determines how many characters from the end of bufferedData to include in text processing.
+   // It should be one less than the largest sequence that may be encountered (e.g. IAC sequence is 3 Bytes so backtracking 2 Bytes will suffice).
+   // This is to avoid performing text processing on buffered data that has already been processed once.
+   if (backtrack > 0) data = `${this.bufferedData.slice(-backtrack)}${data}`;
+   // Text processing:
+   // 1. Handle IAC.
+   // 2. Filter low non-printables except ESC (27), LF (10), CR (13), and HT (9). We need ESC for ANSI sequences.
+   // 3. Split data into lines regardless of EOL format, even invalid \n\r which apparently some awful clients use.
+   // (data MUST be binary encoded String)
+   data = data.replace(/\xff(?:[\xf1-\xf9]|\xfa.+?(?:\xff\xf0|$)|[\xfb-\xfe].)/gs, iac => (this.iacHandle(iac) || ''))
+    .replace(/[^\n\r\t\x1b\x20-\xff]/g, '')
+    .split(
+     this.telnetOptions.eor ? (
+      /(?:\r\n|\n\r|\r|\n|\xff\xef)/
+     ) : (
+      /(?:\r\n|\n\r|\r|\n)/
+     )
+    );
+   if (this.bufferedData.length > backtrack) data[0] = `${this.bufferedData.slice(0, -backtrack)}${data[0]}`;
+   this.bufferedData = data[data.length - 1];
+   if (this.config.bufferTTL > 0) {
+    // Using bufferTTL (time to live) to determine how long to wait before flushing the buffer if no end of line/record has been received.
+    if (this.bufferedData && !this.bufferedData.startsWith('#$#') && !this.iacSubNegotiation) {
+     this.timers.setTimeout('bufferFlush', this.config.bufferTTL, () => {
+      if (this.bufferedData && !this.destroyed && !this.iacSubNegotiation) this.dataHandle("\n");
+     });
+    }
+    else this.timers.delete('bufferFlush');
+   }
+   if (data.length > 1) this.read({ device: this, lines: data.slice(0, -1) });
+   else if (this.bufferedData.length > this.maxLineLength) {
+    exports.log(`${this.title()} exceeded the max line length of ${this.maxLineLength} characters.`);
+    this.close('maxLineLengthExceeded');
+    throw null;
+   }
+  }
+
   iacHandle(iac) {
    // Telnet Protocol, RFC 854:
    // https://tools.ietf.org/html/rfc854
@@ -287,24 +300,62 @@ module.exports = main => {
    // 253 FD  DO
    // 254 FE  DONT
 
-   const record = {
-    received: iac,
-    sent: '',
-    time: new Date(),
-    action: '',
-   };
-   if (this.config.maxIACHistoryLength > 0) {
-    const historyOverflow = this.iacHistory.push(record) - this.config.maxIACHistoryLength;
-    if (historyOverflow > 0) this.iacHistory.splice(0, historyOverflow);
+   if (this.iacSubNegotiation) {
+    const record = this.iacSubNegotiation;
+    record.received += iac;
+    if (record.received.endsWith("\xff\xf0")) {
+     // IAC SE
+     this.iacSubNegotiation = undefined;
+     return record.replaced = (this.iacSubNegotiationHandle(record) || '');
+    }
+    else if (record.received.length > this.maxLineLength) {
+     this.iacSubNegotiation = undefined;
+     exports.log(`${this.title()} exceeded the max line length of ${this.maxLineLength} characters in IAC sub negotiation.`);
+     this.close('maxLineLengthExceeded');
+     throw null;
+    }
    }
-   if (iac.length === 3 && iac[0] === "\xff") {
-    if (iac[1] === "\xfb" || iac[1] === "\xfd") {
+   else if (iac.length > 1 && iac[0] === "\xff") {
+    const record = {
+     received: iac,
+     sent: '',
+     replaced: '',
+     time: new Date(),
+     action: '',
+    };
+    if (this.config.maxIACHistoryLength > 0) {
+     const historyOverflow = this.iacHistory.push(record) - this.config.maxIACHistoryLength;
+     if (historyOverflow > 0) this.iacHistory.splice(0, historyOverflow);
+    }
+    if (iac[1] === "\xf9") {
+     // IAC GA
+     // Translating it to a line break
+     return record.replaced = "\n";
+    }
+    else if (iac[1] === "\xfa") {
+     // IAC SB
+     if (iac.endsWith("\xff\xf0")) {
+      // IAC SE
+      return record.replaced = (this.iacSubNegotiationHandle(record) || '');
+     }
+     else {
+      // Then the sub negotiation parameters span across multiple packets, so all we can do is wait and hope for an end.
+      this.iacSubNegotiation = record;
+     }
+    }
+    else if (iac[1] === "\xfb" || iac[1] === "\xfd") {
      // IAC WILL or DO something
      if (iac === "\xff\xfb\x19") {
       // IAC WILL TELOPT_EOR
       // 255 251  25
       record.action = 'accept';
       this.telnetOptions.eor = true;
+     }
+     else if (iac === "\xff\xfb\xc9") {
+      // IAC WILL GMCP
+      // 255 251  201
+      record.action = 'accept';
+      this.telnetOptions.gmcp = true;
      }
      else record.action = 'reject';
      if (record.action && this.socket) {
@@ -319,8 +370,17 @@ module.exports = main => {
       // 255 252  25
       this.telnetOptions.eor = false;
      }
+     else if (iac === "\xff\xfc\xc9") {
+      // IAC WONT GMCP
+      // 255 252  201
+      this.telnetOptions.gmcp = false;
+     }
     }
    }
+  }
+
+  iacSubNegotiationHandle(record) {
+   return;
   }
 
   read({ device, lines, skipMiddleware, noForwarding }) {
