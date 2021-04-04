@@ -57,7 +57,7 @@ module.exports = (main, middleware) => {
      '',
      `The following list shows some useful MX commands to get started:`,
      `  MX CA - lets you add a new connection.`,
-     `  MX CD - disconnects a connection.`,
+     `  MX CK - disconnects a connection.`,
      `  MX C - lets you switch between connections.`,
      `  MX Q - terminates your client connection to ${exports.title()}.`,
     ]);
