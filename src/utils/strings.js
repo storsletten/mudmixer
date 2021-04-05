@@ -146,7 +146,21 @@ module.exports = main => {
   else if (val === null) return 'null';
   else if (typeof val === 'string') {
    return (details
-    ? `"${val.replace(/[\"\\]/g, c => `\\${c}`).replace(/[\x00-\x1f\x80-\xff]/g, c => `\\x${c.charCodeAt(0).toString(16).padStart(2, '0')}`)}"`
+    ? `"${
+     val
+      .replace(/[\"\\]/g, c => `\\${c}`)
+      .replace(/[\x00-\x1f\x80-\xff]/g, c => (
+       ({
+        "\b": '\\b',
+        "\f": '\\f',
+        "\n": '\\n',
+        "\r": '\\r',
+        "\t": '\\t',
+        "\v": '\\v',
+       })[c]
+       || `\\x${c.charCodeAt(0).toString(16).padStart(2, '0')}`)
+      )
+     }"`
     : val
    );
   }
