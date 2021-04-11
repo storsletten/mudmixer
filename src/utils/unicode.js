@@ -1,83 +1,52 @@
 module.exports = main => {
  const exports = main.exports;
 
- const unidecode = str => {
-  const chunks = [];
-  let extracted = 0;
-  for (let i=0; i<str.length; i++) {
-   const root = unidecodeData[str[i]];
-   if (root) {
-    let j = i;
-    let node = root;
-    while ((++j) < str.length) {
-     node = node[str[j]];
-     if (typeof node === 'object') continue;
-     else break;
-    }
-    if (typeof node === 'string') {
-     chunks.push(str.slice(extracted, i), node);
-     i = j;
-     extracted = i + 1;
-    }
-   }
-  }
-  return (extracted > 0 ? `${chunks.join('')}${str.slice(extracted)}` : str);
+ const unidecode = str => str.replace(unidecodeRegexp, sequence => (unidecodeTable[sequence] || sequence));
+
+ const unidecodeTable = {
+  '\xc2\xa1': '!',
+  '\xc2\xab': '"',
+  '\xc2\xb7': '.',
+  '\xc2\xbb': '"',
+  '\xc2\xbf': '?',
+  '\xe2\x80\x93': '-',
+  '\xe2\x80\x94': '-',
+  '\xe2\x80\x98': "'",
+  '\xe2\x80\x99': "'",
+  '\xe2\x80\x9a': '"',
+  '\xe2\x80\x9b': '"',
+  '\xe2\x80\x9c': '"',
+  '\xe2\x80\x9d': '"',
+  '\xe2\x80\x9e': '"',
+  '\xe2\x80\x9f': '"',
+  '\xe2\x80\xa4': '.',
+  '\xe2\x80\xa6': '...',
+  '\xe2\x80\xb9': '"',
+  '\xe2\x80\xba': '"',
+  '\xe2\x81\x83': '-',
+  '\xe2\x9d\x9b': '"',
+  '\xe2\x9d\x9c': '"',
+  '\xe2\x9d\x9d': '"',
+  '\xe2\x9d\x9e': '"',
+  '\xe2\x9d\x9f': '"',
+  '\xe2\x9d\xae': '"',
+  '\xe2\x9d\xaf': '"',
+  '\xe2\xb9\x82': '"',
+  '\xe3\x80\x9d': '"',
+  '\xe3\x80\x9e': '"',
+  '\xe3\x80\x9f': '"',
+  '\xef\xbc\x82': '"',
  };
 
- const unidecodeData = {
-  '\xc2': {
-   '\xab': '"',
-   '\xbb': '"',
-   '\xb7': '.',
-   '\xbf': '?',
-   '\xa1': '!',
-  },
-  '\xe2': {
-   '\x80': {
-    '\x98': "'",
-    '\x99': "'",
-    '\xb9': '"',
-    '\xba': '"',
-    '\x9e': '"',
-    '\x9c': '"',
-    '\x9f': '"',
-    '\x9d': '"',
-    '\x9a': '"',
-    '\x9b': '"',
-    '\xa4': '.',
-    '\x94': '-',
-    '\x93': '-',
-    '\xa6': '...',
-   },
-   '\x9d': {
-    '\x9d': '"',
-    '\x9e': '"',
-    '\xae': '"',
-    '\xaf': '"',
-    '\x9b': '"',
-    '\x9c': '"',
-    '\x9f': '"',
-   },
-   '\xb9': {
-    '\x82': '"',
-   },
-   '\x81': {
-    '\x83': '-',
-   },
-  },
-  '\xe3': {
-   '\x80': {
-    '\x9d': '"',
-    '\x9e': '"',
-    '\x9f': '"',
-   },
-  },
-  '\xef': {
-   '\xbc': {
-    '\x82': '"',
-   },
-  },
- };
+ const unidecodeRegexp = new RegExp(`(${
+  Object.keys(unidecodeTable)
+  .map(sequence => (
+   Buffer.from(sequence, 'binary')
+   .toString('hex')
+   .replace(/../g, '\\x$&')
+  ))
+  .join('|')
+ })`, 'g');
 
  return {
   unidecode,
