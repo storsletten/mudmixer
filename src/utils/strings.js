@@ -229,6 +229,10 @@ module.exports = main => {
   else return '';
  };
 
+ const strEquals = (a, b) => (String(a).localeCompare(b, undefined, { sensitivity: 'accent' }) === 0);
+ const strStartsWith = (str, startsWith) => (String(str).slice(0, String(startsWith).length).localeCompare(startsWith, undefined, { sensitivity: 'accent' }) === 0);
+ const strEndsWith = (str, endsWith) => (endsWith === '' || String(str).slice(-String(endsWith).length).localeCompare(endsWith, undefined, { sensitivity: 'accent' }) === 0);
+
  // Function to escape Extended ASCII characters. This assumes the string is binary encoded.
  // It converts characters between 128 and 255 (signed chars) into hex values prefixed with: \x
  const escape = str => str.replace(/[\x80-\xff]/g, char => `\\x${char.charCodeAt(0).toString(16).toUpperCase()}`);
@@ -264,6 +268,9 @@ module.exports = main => {
   sanitizeFileName,
   invalidFileName,
   stringify,
+  strEquals,
+  strStartsWith,
+  strEndsWith,
   escape,
   unescape,
  };
