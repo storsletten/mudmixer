@@ -20,6 +20,9 @@ module.exports = main => {
     writeLoggers: [],
    };
    this.db = undefined;
+   this.iacBuffer = [];
+   this.lineBuffer = [];
+   this.ignoreNextLineTerminator = undefined;
    this.readHistory = [];
    this.writeHistory = [];
    this.iacHistory = [];
@@ -84,7 +87,6 @@ module.exports = main => {
    if (options.label) this.setLabel(options.label);
    if (options.session) this.setSession(options.session);
    if (this.events.destroyed) this.events = new exports.utils.Events();
-   this.bufferedData = options.bufferedData || this.bufferedData || '';
    this.maxLineLength = options.maxLineLength || this.maxLineLength || (5 * 1024 * 1024);
    if (options.db) this.setDatabase(options.db);
    exports.events.emit('deviceSet', this, options);
@@ -125,7 +127,8 @@ module.exports = main => {
    this.socket = socket;
    this.socket.ended = false;
    if (this.socketEvents) this.socketEvents.close();
-   if (this.bufferedData) this.bufferedData = '';
+   if (this.iacBuffer.length > 0) this.iacBuffer.length = 0;
+   if (this.lineBuffer.length > 0) this.lineBuffer.length = 0;
    if (this.mcp) this.mcp = undefined;
    this.socketEvents = new exports.utils.Events(socket);
    // Using binary (latin1) encoding to preserve all Bytes while also allowing String and RegExp operations.
@@ -245,50 +248,101 @@ module.exports = main => {
   }
 
   dataHandle(data) {
-   if (this.iacSubNegotiation) {
-    if (data[0] === "\xf0" && this.iacSubNegotiation.received.endsWith("\xff")) {
-     // Then the IAC SE command itself was fragmented.
-     data = data.replace(/^\xf0/s, iac => (this.iacHandle(iac) || ''));
+   data = data.split(/([\n|\r|\xff])/);
+   for (let i=0; i<data.length; i++) {
+    if (data[i] === '') continue;
+    if (this.iacBuffer.length !== 0) {
+     if (this.iacBuffer.length === 1) {
+      const command = data[i].charCodeAt(0);
+      if (command === 255) {
+       this.iacBuffer.length = 0;
+       this.lineBuffer.push(data[i]);
+       continue;
+      }
+      else {
+       this.iacBuffer.push(data[i][0]);
+       if (command < 250) this.iacHandle(this.iacBuffer.splice(0, this.iacBuffer.length).join(''));
+       if (data[i].length === 1) continue;
+       data[i] = data[i].slice(1);
+      }
+     }
+     if (this.iacBuffer.length > 1) {
+      const command = this.iacBuffer[1].charCodeAt(0);
+      if (command === 250) {
+       // Subnegotiation
+       // This code assumes that subnegotiations will not be nested.
+       if (this.iacBuffer[this.iacBuffer.length - 1] === "\xff") {
+        if (data[i][0] === "\xf0") {
+         // Subnegotiation End
+         this.iacHandle(this.iacBuffer.splice(0, this.iacBuffer.length).join('') + "\xf0");
+         if (data[i].length === 1) continue;
+         data[i] = data[i].slice(1);
+        }
+        else if (data[i][0] === "\xff") {
+         this.iacBuffer.push('');
+         if (data[i].length === 1) continue;
+         data[i] = data[i].slice(1);
+        }
+        else {
+         this.iacBuffer.push(data[i]);
+         continue;
+        }
+       }
+       else {
+        this.iacBuffer.push(data[i]);
+        continue;
+       }
+      }
+      else if (command > 250) {
+       // WILL / WONT / DO / DONT
+       this.iacHandle(this.iacBuffer.splice(0, this.iacBuffer.length).join('') + data[i][0]);
+       if (data[i].length === 1) continue;
+       data[i] = data[i].slice(1);
+      }
+      else {
+       // Who knows
+       this.iacHandle(this.iacBuffer.splice(0, this.iacBuffer.length).join(''));
+      }
+     }
     }
-    else data = data.replace(/^.*?\xff\xf0/s, iac => (this.iacHandle(iac) || ''));
-    if (!data) return;
+    if (data[i].length === 1) {
+     const byte = data[i];
+     if (byte === "\n" || byte === "\r") {
+      if (byte === this.ignoreNextLineTerminator) this.ignoreNextLineTerminator = undefined;
+      else { 
+       this.ignoreNextLineTerminator = (byte === "\n" ? "\r" : "\n");
+       this.read();
+      }
+      continue;
+     }
+     else if (byte === "\xff") {
+      this.iacBuffer.push(byte);
+      continue;
+     }
+    }
+    this.lineBuffer.push(data[i]);
    }
-   const backtrack = Math.min(2, this.bufferedData.length);
-   // Backtrack determines how many characters from the end of bufferedData to include in text processing.
-   // It should be one less than the largest sequence that may be encountered (e.g. IAC sequence is 3 Bytes so backtracking 2 Bytes will suffice).
-   // This is to avoid performing text processing on buffered data that has already been processed once.
-   if (backtrack > 0) data = `${this.bufferedData.slice(-backtrack)}${data}`;
-   // Text processing:
-   // 1. Handle IAC.
-   // 2. Filter low non-printables except ESC (27), LF (10), CR (13), and HT (9). We need ESC for ANSI sequences.
-   // 3. Split data into lines regardless of EOL format, even invalid \n\r which apparently some awful clients use.
-   // (data MUST be binary encoded String)
-   data = data.replace(/\xff(?:[\xf1-\xf9\xff]|\xfa.+?(?:\xff\xf0|$)|[\xfb-\xfe].)/gs, iac => (this.iacHandle(iac) || ''))
-    .replace(/[^\n\r\t\x1b\x20-\xff]/g, '')
-    .split(
-     this.telnetOptions.eor ? (
-      /(?:\r\n|\n\r|\r|\n|\xff\xef)/
-     ) : (
-      /(?:\r\n|\n\r|\r|\n)/
-     )
-    );
-   if (this.bufferedData.length > backtrack) data[0] = `${this.bufferedData.slice(0, -backtrack)}${data[0]}`;
-   this.bufferedData = data[data.length - 1];
-   if (this.config.bufferTTL > 0) {
-    // Using bufferTTL (time to live) to determine how long to wait before flushing the buffer if no end of line/record has been received.
-    if (this.bufferedData && !this.bufferedData.startsWith('#$#') && !this.iacSubNegotiation) {
+   if (this.config.bufferTTL > 0 && this.iacBuffer.length === 0 && this.lineBuffer.length !== 0) {
+    // Conditionally use bufferTTL (time to live) to determine how long to wait before flushing the lineBuffer if no end of line/record has been received.
+    // This is because some MUDs don't terminate their prompts properly.
+    let strBuffer = this.lineBuffer[0];
+    for (let i=1; i<this.lineBuffer.length; i++) {
+     // If the buffer is larger than 1000, then it's probably not a prompt:
+     if (strBuffer.length > 1000) {
+      strBuffer = '';
+      break;
+     }
+     else strBuffer += this.lineBuffer[i];
+    }
+    // It is not a prompt if it's an OOB message:
+    if (strBuffer && !strBuffer.startsWith('#$#')) {
      this.timers.setTimeout('bufferFlush', this.config.bufferTTL, () => {
-      if (this.bufferedData && !this.destroyed && !this.iacSubNegotiation) this.dataHandle("\n");
+      if (this.lineBuffer.length !== 0 && !this.destroyed) this.read();
      });
+     return;
     }
-    else this.timers.delete('bufferFlush');
    }
-   if (data.length > 1) this.read({ device: this, lines: data.slice(0, -1) });
-   else if (this.bufferedData.length > this.maxLineLength) {
-    exports.log(`${this.title()} exceeded the max line length of ${this.maxLineLength} characters.`);
-    this.close('maxLineLengthExceeded');
-    throw null;
-   }
+   this.timers.delete('bufferFlush');
   }
 
   iacSend(iac) {
@@ -307,53 +361,28 @@ module.exports = main => {
    // Telnet Protocol, RFC 854:
    // https://tools.ietf.org/html/rfc854
 
-   if (this.iacSubNegotiation) {
-    const record = this.iacSubNegotiation;
-    record.received += iac;
-    if (record.received.endsWith("\xff\xf0")) {
-     // IAC SE
-     this.iacSubNegotiation = undefined;
-     return record.replaced = (this.iacSubNegotiationHandle(record) || '');
+   const record = {
+    action: undefined,
+    received: iac,
+    time: new Date(),
+   };
+   if (this.config.maxIACHistoryLength > 0) {
+    const historyOverflow = this.iacHistory.push(record) - this.config.maxIACHistoryLength;
+    if (historyOverflow > 0) this.iacHistory.splice(0, historyOverflow);
+   }
+   if (iac.length < 2) throw new Error(`No IAC command is less than 2 Bytes.`);
+   else if (iac.length === 2) {
+    if (iac[1] === "\xef") {
+     // End of Record
+     if (this.telnetOptions.eor && this.lineBuffer.length > 0) this.read();
     }
-    else if (record.received.length > this.maxLineLength) {
-     this.iacSubNegotiation = undefined;
-     exports.log(`${this.title()} exceeded the max line length of ${this.maxLineLength} characters in IAC sub negotiation.`);
-     this.close('maxLineLengthExceeded');
-     throw null;
+    else if (iac[1] === "\xf9") {
+     // IAC GA
+     if (this.lineBuffer.length > 0) this.read();
     }
    }
-   else if (iac.length > 1 && iac[0] === "\xff") {
-    if (iac === "\xff\xff") {
-     // Interpret as command.
-     return "\xff\xff";
-    }
-    const record = {
-     action: '',
-     received: iac,
-     replaced: '',
-     time: new Date(),
-    };
-    if (this.config.maxIACHistoryLength > 0) {
-     const historyOverflow = this.iacHistory.push(record) - this.config.maxIACHistoryLength;
-     if (historyOverflow > 0) this.iacHistory.splice(0, historyOverflow);
-    }
-    if (iac[1] === "\xf9") {
-     // IAC GA
-     // Translating it to a line break
-     return record.replaced = "\n";
-    }
-    else if (iac[1] === "\xfa") {
-     // IAC SB
-     if (iac.endsWith("\xff\xf0")) {
-      // IAC SE
-      return record.replaced = (this.iacSubNegotiationHandle(record) || '');
-     }
-     else {
-      // Then the sub negotiation parameters span across multiple packets, so all we can do is wait and hope for an end.
-      this.iacSubNegotiation = record;
-     }
-    }
-    else if (iac[1] === "\xfb" || iac[1] === "\xfd") {
+   else if (iac.length === 3) {
+    if (iac[1] === "\xfb" || iac[1] === "\xfd") {
      // IAC WILL or DO something
      if (iac === "\xff\xfb\x19") {
       // IAC WILL TELOPT_EOR
@@ -403,24 +432,30 @@ module.exports = main => {
      }
     }
    }
-  }
-
-  iacSubNegotiationHandle(record) {
-   const { received } = record;
-   const data = received.slice(3, -2);
-   if (received[2] === "\x46") {
-    // MSSP
-    this.mssp = data.split("\x01").slice(1).reduce((mssp, data) => {
-     const [ name, value ] = data.split("\x02");
-     if (value.match(/^\d{1,11}(?:\.\d{1,11})?$/)) mssp[name] = Number(value);
-     else mssp[name] = value;
-     return mssp;
-    }, {});
+   else {
+    if (iac[1] === "\xfa") {
+     // IAC Subnegotiation
+     if (!iac.endsWith("\xff\xf0")) throw new Error(`IAC Subnegotiation was not terminated properly`);
+     const data = iac.slice(3, -2);
+     if (iac[2] === "\x46") {
+      // MSSP
+      this.mssp = data.split("\x01").slice(1).reduce((mssp, data) => {
+       const [ name, value ] = data.split("\x02");
+       if (value.match(/^\d{1,11}(?:\.\d{1,11})?$/)) mssp[name] = Number(value);
+       else mssp[name] = value;
+       return mssp;
+      }, {});
+     }
+    }
    }
-   return;
   }
 
-  read({ device, lines, skipMiddleware, noForwarding }) {
+  read({
+   device = this,
+   lines = [this.lineBuffer.splice(0, this.lineBuffer.length).join('')],
+   skipMiddleware = false,
+   noForwarding = false,
+  } = {}) {
    // The device is the source, i.e. where the data came from.
    // This method may be called for two reasons:
    // - There's incoming data from this.socket.
@@ -431,7 +466,7 @@ module.exports = main => {
     const time = new Date();
     const options = { noForwarding };
     const lines = (this.middleware && !skipMiddleware) ? this.middleware.action({ device, line, options, triggers: this.middleware[this.isClient() ? 'clientTriggers' : 'serverTriggers'] }).lines : [line];
-    if (device !== this && this.socket && this.isClient()) lines.forEach(line => this.socket.write(`${line}${this.config.eol}`, 'binary'));
+    if (device !== this && this.socket && this.isClient()) lines.forEach(line => this.socket.write(`${line.replace(/\xff/g, "\xff\xff")}${this.config.eol}`, 'binary'));
     if (options.executed === undefined && this.isClient() && !line.startsWith('#$#') && !this.hasActiveServers()) {
      if (!this.session) device.tell(`Please use the CONNECT command to log in to a session.`);
      else if (this.session.servers.size === 0) device.tell(`This session has no server connections added. Please see MX HELP CA for information about how to add a connection.`);
@@ -480,7 +515,7 @@ module.exports = main => {
      : [line]
     );
     if (this.socket && (!options.clientsOnly || this.isClient())) {
-     lines.forEach(line => this.socket.write(`${this.config.ascii ? exports.utils.unidecode(line) : line}${this.config.eol}`, 'binary'));
+     lines.forEach(line => this.socket.write(`${(this.config.ascii ? exports.utils.unidecode(line) : line).replace(/\xff/g, "\xff\xff")}${this.config.eol}`, 'binary'));
     }
     if (!options.noForwarding) this.writePipes.forEach(d => d.pipe({ device, line, lines, options, operation: 'write' }));
     if (this.config.maxWriteHistoryLength > 0) {
