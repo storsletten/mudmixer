@@ -141,6 +141,9 @@ module.exports = main => {
   return invalidCharacters.size > 0 && Array.from(invalidCharacters);
  };
 
+ const bin2utf = (str) => Buffer.from(str, 'binary').toString('utf8');
+ const utf2bin = (str) => Buffer.from(str, 'utf8').toString('binary');
+
  const stringify = (val, { depth = 1, indent = 0, details = false } = {}) => {
   if (val === undefined) return 'undefined';
   else if (val === null) return 'null';
@@ -267,6 +270,8 @@ module.exports = main => {
   parseArgstr,
   sanitizeFileName,
   invalidFileName,
+  bin2utf,
+  utf2bin,
   stringify,
   strEquals,
   strStartsWith,
