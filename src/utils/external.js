@@ -7,6 +7,16 @@ module.exports = main => {
  const exports = main.exports;
  const platform = os.platform();
 
+ const copyToClipboard = (str) => {
+  const name = ({
+   'darwin': 'pbclip',
+   'linux': 'xclip',
+   'win32': 'clip',
+  })[platform];
+  if (name) childProcess.spawn(name).stdin.end(str);
+  else throw new Error(`Don't know how to copy to clipboard on this platform.`);
+ };
+
  const msgBox = (msg, title = exports.title() || 'Message') => {
   if (platform === 'win32') {
    exports.log(`Message box:`, msg);
@@ -81,6 +91,7 @@ module.exports = main => {
  };
 
  return {
+  copyToClipboard,
   msgBox,
   localEdit,
   powershell,
